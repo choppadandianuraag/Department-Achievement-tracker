@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type { ReactNode, ElementType } from 'react';
 import { useAchievements } from '../context/AchievementContext';
+import { supabase, supabaseConfigured } from '../lib/supabase';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -22,7 +23,6 @@ import {
   GraduationCap,
   Globe,
   Users,
-  Link2,
   Calendar,
   Mail,
   Hash,
@@ -30,6 +30,8 @@ import {
   Star,
   Image,
   Info,
+  Upload,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -47,9 +49,9 @@ interface SubmissionForm {
   achievementLevel: string;
   eventName: string;
   date: string;
-  // Step 3
-  certificateLink: string;
-  eventImageLink: string;
+  // Step 3 — files instead of links
+  certificateFile: File | null;
+  eventImageFile: File | null;
 }
 
 const INITIAL_FORM: SubmissionForm = {
@@ -63,8 +65,8 @@ const INITIAL_FORM: SubmissionForm = {
   achievementLevel: '',
   eventName: '',
   date: '',
-  certificateLink: '',
-  eventImageLink: '',
+  certificateFile: null,
+  eventImageFile: null,
 };
 
 // Award options from Figma design
@@ -92,6 +94,9 @@ const ACHIEVEMENT_LEVELS = [
   'International',
 ];
 
+const ACCEPTED_FILE_TYPES = '.png,.jpg,.jpeg';
+const ACCEPTED_MIME_TYPES = ['image/png', 'image/jpeg'];
+
 // ─── Step Progress Indicator ──────────────────────────────────────────────────
 const steps = [
   { id: 1, label: 'Personal Details', icon: User },
@@ -115,25 +120,24 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
                   w-11 h-11 rounded-full flex items-center justify-center
                   border-2 transition-all duration-300
                   ${isCompleted
-                    ? 'bg-[#0ea5e9] border-[#0ea5e9] shadow-lg shadow-[#0ea5e9]/30'
+                    ? 'bg-primary border-primary shadow-lg'
                     : isActive
-                    ? 'bg-[#0ea5e9]/15 border-[#0ea5e9] shadow-lg shadow-[#0ea5e9]/20'
-                    : 'bg-white/5 border-white/20'
+                      ? 'bg-primary/15 border-primary shadow-lg'
+                      : 'bg-secondary border-border'
                   }
                 `}
               >
                 {isCompleted ? (
-                  <CheckCircle2 className="w-5 h-5 text-white" />
+                  <CheckCircle2 className="w-5 h-5 text-primary-foreground" />
                 ) : (
                   <Icon
-                    className={`w-5 h-5 ${isActive ? 'text-[#0ea5e9]' : 'text-white/30'}`}
+                    className={`w-5 h-5 ${isActive ? 'text-foreground' : 'text-muted-foreground/50'}`}
                   />
                 )}
               </div>
               <span
-                className={`text-xs whitespace-nowrap transition-colors duration-300 ${
-                  isActive ? 'text-[#0ea5e9]' : isCompleted ? 'text-white/70' : 'text-white/30'
-                }`}
+                className={`text-xs whitespace-nowrap transition-colors duration-300 ${isActive ? 'text-foreground' : isCompleted ? 'text-muted-foreground' : 'text-muted-foreground/50'
+                  }`}
               >
                 {step.label}
               </span>
@@ -142,9 +146,9 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
             {/* Connector line */}
             {index < steps.length - 1 && (
               <div className="relative mx-3 mb-5">
-                <div className="w-16 sm:w-24 h-px bg-white/10" />
+                <div className="w-16 sm:w-24 h-px bg-border" />
                 <div
-                  className="absolute inset-0 h-px bg-[#0ea5e9] transition-all duration-500"
+                  className="absolute inset-0 h-px bg-foreground transition-all duration-500"
                   style={{ width: currentStep > step.id ? '100%' : '0%' }}
                 />
               </div>
@@ -173,9 +177,9 @@ function FieldLabel({
   return (
     <Label
       htmlFor={htmlFor}
-      className="text-white/90 flex items-center gap-2"
+      className="text-foreground/90 flex items-center gap-2"
     >
-      {Icon && <Icon className="w-3.5 h-3.5 text-[#0ea5e9]" />}
+      {Icon && <Icon className="w-3.5 h-3.5 text-muted-foreground" />}
       {children}
     </Label>
   );
@@ -201,9 +205,9 @@ function StyledInput({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="bg-white/5 border-white/10 text-white placeholder:text-white/30
-        focus:border-[#0ea5e9] focus:ring-1 focus:ring-[#0ea5e9]/30
-        hover:border-white/20 transition-colors"
+      className="bg-input-background border-border text-foreground placeholder:text-muted-foreground/50
+        focus:border-foreground focus:ring-1 focus:ring-foreground/30
+        hover:border-muted-foreground/40 transition-colors"
     />
   );
 }
@@ -225,15 +229,93 @@ function StyledSelect({
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger
         id={id}
-        className="bg-white/5 border-white/10 text-white hover:border-white/20
-          focus:border-[#0ea5e9] focus:ring-1 focus:ring-[#0ea5e9]/30 transition-colors"
+        className="bg-input-background border-border text-foreground hover:border-muted-foreground/40
+          focus:border-foreground focus:ring-1 focus:ring-foreground/30 transition-colors"
       >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
-      <SelectContent className="bg-[#1a2240] border-white/10 text-white">
+      <SelectContent className="bg-popover border-border text-popover-foreground">
         {children}
       </SelectContent>
     </Select>
+  );
+}
+
+// ─── File Upload Component ────────────────────────────────────────────────────
+function FileUpload({
+  id,
+  label,
+  file,
+  onChange,
+  required = false,
+}: {
+  id: string;
+  label: string;
+  file: File | null;
+  onChange: (f: File | null) => void;
+  required?: boolean;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) {
+      if (!ACCEPTED_MIME_TYPES.includes(f.type)) {
+        toast.error('Only PNG, JPG, and JPEG files are accepted.');
+        return;
+      }
+      onChange(f);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      {file ? (
+        <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-secondary">
+          <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+            <img
+              src={URL.createObjectURL(file)}
+              alt="Preview"
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-foreground text-sm font-medium truncate">{file.name}</p>
+            <p className="text-muted-foreground text-xs">{(file.size / 1024).toFixed(1)} KB</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              onChange(null);
+              if (inputRef.current) inputRef.current.value = '';
+            }}
+            className="p-1 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="w-full flex flex-col items-center gap-2 p-6 rounded-xl border-2 border-dashed border-border hover:border-muted-foreground/50 bg-input-background transition-colors cursor-pointer"
+        >
+          <Upload className="w-6 h-6 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">
+            Click to upload {label}
+          </span>
+          <span className="text-xs text-muted-foreground/60">PNG, JPG, JPEG only</span>
+        </button>
+      )}
+      <input
+        ref={inputRef}
+        id={id}
+        type="file"
+        accept={ACCEPTED_FILE_TYPES}
+        onChange={handleChange}
+        className="sr-only"
+      />
+    </div>
   );
 }
 
@@ -247,8 +329,7 @@ function AwardRadioGroup({
 }) {
   return (
     <div
-      className="rounded-xl border border-white/10 p-4 grid grid-cols-1 sm:grid-cols-2 gap-y-1 gap-x-4"
-      style={{ background: 'rgba(255,255,255,0.03)' }}
+      className="rounded-xl border border-border p-4 grid grid-cols-1 sm:grid-cols-2 gap-y-1 gap-x-4 bg-secondary/50"
     >
       {AWARD_OPTIONS.map((option) => {
         const isSelected = value === option;
@@ -256,7 +337,7 @@ function AwardRadioGroup({
           <label
             key={option}
             className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer group
-              hover:bg-white/5 transition-colors"
+              hover:bg-accent transition-colors"
           >
             <input
               type="radio"
@@ -271,18 +352,17 @@ function AwardRadioGroup({
               className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0
                 transition-all duration-150
                 ${isSelected
-                  ? 'border-[#0ea5e9] bg-[#0ea5e9]'
-                  : 'border-white/30 bg-transparent group-hover:border-white/50'
+                  ? 'border-foreground bg-foreground'
+                  : 'border-muted-foreground/40 bg-transparent group-hover:border-muted-foreground'
                 }`}
             >
               {isSelected && (
-                <div className="w-2 h-2 rounded-full bg-white" />
+                <div className="w-2 h-2 rounded-full bg-background" />
               )}
             </div>
             <span
-              className={`text-sm transition-colors ${
-                isSelected ? 'text-white' : 'text-white/60 group-hover:text-white/80'
-              }`}
+              className={`text-sm transition-colors ${isSelected ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground/80'
+                }`}
             >
               {option}
             </span>
@@ -303,8 +383,7 @@ function AchievementLevelGroup({
 }) {
   return (
     <div
-      className="rounded-xl border border-white/10 p-4 space-y-1"
-      style={{ background: 'rgba(255,255,255,0.03)' }}
+      className="rounded-xl border border-border p-4 space-y-1 bg-secondary/50"
     >
       {ACHIEVEMENT_LEVELS.map((level) => {
         const isSelected = value === level;
@@ -312,7 +391,7 @@ function AchievementLevelGroup({
           <label
             key={level}
             className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer group
-              hover:bg-white/5 transition-colors"
+              hover:bg-accent transition-colors"
           >
             <input
               type="radio"
@@ -327,20 +406,19 @@ function AchievementLevelGroup({
               className={`w-5 h-5 rounded-[4px] border-2 flex items-center justify-center flex-shrink-0
                 transition-all duration-150
                 ${isSelected
-                  ? 'border-[#0ea5e9] bg-[#0ea5e9]'
-                  : 'border-white/30 bg-transparent group-hover:border-white/50'
+                  ? 'border-foreground bg-foreground'
+                  : 'border-muted-foreground/40 bg-transparent group-hover:border-muted-foreground'
                 }`}
             >
               {isSelected && (
-                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 12 12">
-                  <path d="M10 3L5 8.5 2 5.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                <svg className="w-3 h-3 text-background" fill="currentColor" viewBox="0 0 12 12">
+                  <path d="M10 3L5 8.5 2 5.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
                 </svg>
               )}
             </div>
             <span
-              className={`text-sm transition-colors ${
-                isSelected ? 'text-white' : 'text-white/60 group-hover:text-white/80'
-              }`}
+              className={`text-sm transition-colors ${isSelected ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground/80'
+                }`}
             >
               {level}
             </span>
@@ -373,36 +451,36 @@ function ReviewSummary({ data }: { data: SubmissionForm }) {
       label: 'Event Date',
       value: data.date
         ? new Date(data.date + 'T00:00:00').toLocaleDateString('en-IN', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-          })
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        })
         : '',
       icon: Calendar,
     },
-    { label: 'Certificate Link', value: data.certificateLink, icon: Link2 },
-    { label: 'Event Image Link', value: data.eventImageLink || '—', icon: Image },
+    { label: 'Certificate', value: data.certificateFile?.name || '—', icon: Upload },
+    { label: 'Event Image', value: data.eventImageFile?.name || '—', icon: Image },
   ];
 
   return (
-    <div className="rounded-xl border border-[#0ea5e9]/20 bg-[#0ea5e9]/5 p-5 space-y-3">
-      <h4 className="text-white flex items-center gap-2 mb-4">
-        <CheckCircle2 className="w-4 h-4 text-[#0ea5e9]" />
+    <div className="rounded-xl border border-border bg-secondary p-5 space-y-3">
+      <h4 className="text-foreground flex items-center gap-2 mb-4">
+        <CheckCircle2 className="w-4 h-4 text-foreground" />
         Review Your Submission
       </h4>
       <div className="grid sm:grid-cols-2 gap-3">
         {rows.map(({ label, value, icon: Icon }) => (
           <div
             key={label}
-            className="flex items-start gap-3 p-3 rounded-lg bg-white/5"
+            className="flex items-start gap-3 p-3 rounded-lg bg-accent/50"
           >
-            <div className="w-7 h-7 rounded-md bg-[#0ea5e9]/15 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <Icon className="w-3.5 h-3.5 text-[#0ea5e9]" />
+            <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Icon className="w-3.5 h-3.5 text-muted-foreground" />
             </div>
             <div className="min-w-0">
-              <p className="text-white/50 text-xs">{label}</p>
-              <p className="text-white text-sm break-all leading-snug mt-0.5">
-                {value || <span className="text-white/30 italic">Not provided</span>}
+              <p className="text-muted-foreground text-xs">{label}</p>
+              <p className="text-foreground text-sm break-all leading-snug mt-0.5">
+                {value || <span className="text-muted-foreground/50 italic">Not provided</span>}
               </p>
             </div>
           </div>
@@ -416,22 +494,51 @@ function ReviewSummary({ data }: { data: SubmissionForm }) {
 function SuccessScreen({ onReset }: { onReset: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#0ea5e9] to-[#0284c7] flex items-center justify-center shadow-2xl shadow-[#0ea5e9]/30 mb-6">
-        <CheckCircle2 className="w-10 h-10 text-white" />
+      <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center shadow-2xl mb-6">
+        <CheckCircle2 className="w-10 h-10 text-primary-foreground" />
       </div>
-      <h3 className="text-white mb-3">Achievement Submitted!</h3>
-      <p className="text-white/60 max-w-sm mb-8">
+      <h3 className="text-foreground mb-3">Achievement Submitted!</h3>
+      <p className="text-muted-foreground max-w-sm mb-8">
         Your achievement has been submitted successfully and is now pending review by the
         department admin.
       </p>
       <Button
         onClick={onReset}
-        className="bg-gradient-to-r from-[#0ea5e9] to-[#0284c7] hover:from-[#0284c7] hover:to-[#075985] text-white shadow-lg shadow-[#0ea5e9]/20 px-8"
+        className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg px-8"
       >
         Submit Another Achievement
       </Button>
     </div>
   );
+}
+
+// ─── Helper: upload file to Supabase Storage ──────────────────────────────────
+async function uploadFile(file: File, folder: string): Promise<string> {
+  if (!supabaseConfigured) return '';
+
+  const ext = file.name.split('.').pop();
+  const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from('achievement-uploads')
+    .upload(fileName, file, { contentType: file.type });
+
+  if (error) {
+    // Give a human-readable message for the most common bucket error
+    const msg = error.message || '';
+    if (msg.includes('Bucket not found') || msg.includes('bucket') || msg.includes('storage')) {
+      throw new Error(
+        'Storage bucket not found. Please create the "achievement-uploads" bucket in your Supabase Dashboard → Storage.'
+      );
+    }
+    throw new Error(`File upload failed: ${msg}`);
+  }
+
+  const { data } = supabase.storage
+    .from('achievement-uploads')
+    .getPublicUrl(fileName);
+
+  return data.publicUrl;
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -440,9 +547,13 @@ export function StudentPortal() {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<SubmissionForm>(INITIAL_FORM);
   const [submitted, setSubmitted] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const set = (field: keyof SubmissionForm) => (value: string) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
+
+  const setFile = (field: 'certificateFile' | 'eventImageFile') => (file: File | null) =>
+    setFormData((prev) => ({ ...prev, [field]: file }));
 
   // ── Validation ──────────────────────────────────────────────────────────────
   const validateStep1 = () => {
@@ -466,8 +577,8 @@ export function StudentPortal() {
   };
 
   const validateStep3 = () => {
-    if (!formData.certificateLink.trim()) {
-      toast.error('Please provide the Google Drive link for your certificate.');
+    if (!formData.certificateFile) {
+      toast.error('Please upload your certificate image.');
       return false;
     }
     return true;
@@ -485,32 +596,81 @@ export function StudentPortal() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateStep3()) return;
 
-    addAchievement({
-      studentName: formData.studentName,
-      rollNumber: formData.hallTicketNumber,
-      hallTicketNumber: formData.hallTicketNumber,
-      email: formData.email,
-      department: formData.stream,
-      stream: formData.stream,
-      year: formData.year,
-      achievementType: formData.achievementLevel,
-      achievementLevel: formData.achievementLevel,
-      title: formData.awardName,
-      awardName: formData.awardName,
-      description: formData.eventName,
-      eventName: formData.eventName,
-      teamType: formData.teamType as 'team' | 'individual',
-      date: formData.date,
-      proof: formData.certificateLink,
-      certificateLink: formData.certificateLink,
-      eventImageLink: formData.eventImageLink,
-    });
+    setUploading(true);
+    try {
+      // Upload files to Supabase Storage (graceful degradation — continue without URL if storage fails)
+      let certificateUrl = '';
+      let eventImageUrl = '';
+      let storageWarning = '';
 
-    setSubmitted(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (formData.certificateFile) {
+        try {
+          certificateUrl = await uploadFile(formData.certificateFile, 'certificates');
+        } catch (uploadErr) {
+          const msg = uploadErr instanceof Error ? uploadErr.message : 'Unknown upload error';
+          console.error('Certificate upload failed:', msg);
+          storageWarning = msg;
+        }
+      }
+      if (formData.eventImageFile) {
+        try {
+          eventImageUrl = await uploadFile(formData.eventImageFile, 'event-images');
+        } catch (uploadErr) {
+          console.error('Event image upload failed:', uploadErr);
+          // Non-critical — just skip the image URL
+        }
+      }
+
+      await addAchievement({
+        studentName: formData.studentName,
+        rollNumber: formData.hallTicketNumber,
+        hallTicketNumber: formData.hallTicketNumber,
+        email: formData.email,
+        department: formData.stream,
+        stream: formData.stream,
+        year: formData.year,
+        achievementType: formData.achievementLevel,
+        achievementLevel: formData.achievementLevel,
+        title: formData.awardName,
+        awardName: formData.awardName,
+        description: formData.eventName,
+        eventName: formData.eventName,
+        teamType: formData.teamType as 'team' | 'individual',
+        date: formData.date,
+        proof: certificateUrl,
+        certificateLink: certificateUrl,
+        eventImageLink: eventImageUrl,
+      });
+
+      setSubmitted(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Warn about storage issue AFTER successful submission
+      if (storageWarning) {
+        toast.warning(
+          'Achievement saved, but file upload failed. ' +
+          'Please set up the Supabase Storage bucket "achievement-uploads" to enable file uploads.',
+          { duration: 8000 }
+        );
+      }
+    } catch (err) {
+      console.error('Submission error:', err);
+      const msg = err instanceof Error ? err.message : '';
+      if (msg.toLowerCase().includes('rls') || msg.toLowerCase().includes('policy') || msg.toLowerCase().includes('permission')) {
+        toast.error('Permission denied. Please check the Row Level Security policies on the achievements table in Supabase.');
+      } else if (msg.toLowerCase().includes('unique') || msg.toLowerCase().includes('duplicate')) {
+        toast.error('A submission with this information already exists.');
+      } else if (msg) {
+        toast.error(`Submission failed: ${msg}`);
+      } else {
+        toast.error('Failed to submit achievement. Please check your internet connection and try again.');
+      }
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleReset = () => {
@@ -520,13 +680,7 @@ export function StudentPortal() {
   };
 
   return (
-    <div
-      className="min-h-screen pb-16"
-      style={{
-        background:
-          'radial-gradient(ellipse at 60% 0%, rgba(14,165,233,0.08) 0%, transparent 60%)',
-      }}
-    >
+    <div className="min-h-screen pb-16">
       {/* ── Hero Header ───────────────────────────────────────────────────── */}
       <div className="pt-10 pb-8 px-4">
         <div className="max-w-2xl mx-auto">
@@ -535,40 +689,33 @@ export function StudentPortal() {
             {/* College logo placeholder */}
             <div
               className="w-16 h-16 rounded-2xl flex-shrink-0 flex items-center justify-center
-                border border-white/10 bg-[rgba(30,39,73,0.7)] backdrop-blur-md shadow-xl"
-              style={{
-                background:
-                  'linear-gradient(135deg, rgba(14,165,233,0.25) 0%, rgba(2,132,199,0.15) 100%)',
-              }}
+                border border-border bg-card backdrop-blur-md shadow-xl"
             >
-              <GraduationCap className="w-8 h-8 text-[#0ea5e9]" />
+              <GraduationCap className="w-8 h-8 text-foreground" />
             </div>
 
             <div>
-              <h1 className="text-white leading-tight">
+              <h1 className="text-foreground leading-tight">
                 Department Achievement Tracker
               </h1>
-              <p className="text-white/55 mt-1">
+              <p className="text-primary font-semibold text-sm mt-0.5">
+                Department of CSE-(DS,CYS) &amp; AI&amp;DS
+              </p>
+              <p className="text-muted-foreground mt-1">
                 Submit your academic and extracurricular achievements
               </p>
             </div>
           </div>
 
           {/* Accent line */}
-          <div className="h-px bg-gradient-to-r from-[#0ea5e9] via-[#38bdf8] to-transparent" />
+          <div className="h-px bg-gradient-to-r from-foreground/30 via-muted-foreground/20 to-transparent" />
         </div>
       </div>
 
       {/* ── Form Card ─────────────────────────────────────────────────────── */}
       <div className="px-4">
         <div
-          className="max-w-2xl mx-auto rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
-          style={{
-            background: 'rgba(20, 28, 60, 0.70)',
-            backdropFilter: 'blur(20px)',
-            boxShadow:
-              '0 0 0 1px rgba(255,255,255,0.06), 0 32px 64px rgba(0,0,0,0.4), 0 0 80px rgba(14,165,233,0.06)',
-          }}
+          className="max-w-2xl mx-auto rounded-2xl border border-border shadow-2xl overflow-hidden bg-card backdrop-blur-xl"
         >
           {/* Inner padding */}
           <div className="p-6 sm:p-8">
@@ -580,20 +727,20 @@ export function StudentPortal() {
                 <StepIndicator currentStep={currentStep} />
 
                 {/* Step title */}
-                <div className="mb-8 pb-6 border-b border-white/8">
+                <div className="mb-8 pb-6 border-b border-border">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#0ea5e9] to-[#0284c7] flex items-center justify-center shadow-lg shadow-[#0ea5e9]/25">
-                      {currentStep === 1 && <User className="w-4 h-4 text-white" />}
-                      {currentStep === 2 && <Trophy className="w-4 h-4 text-white" />}
-                      {currentStep === 3 && <Paperclip className="w-4 h-4 text-white" />}
+                    <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-lg">
+                      {currentStep === 1 && <User className="w-4 h-4 text-primary-foreground" />}
+                      {currentStep === 2 && <Trophy className="w-4 h-4 text-primary-foreground" />}
+                      {currentStep === 3 && <Paperclip className="w-4 h-4 text-primary-foreground" />}
                     </div>
                     <div>
-                      <h2 className="text-white">
+                      <h2 className="text-foreground">
                         {currentStep === 1 && 'Personal Details'}
                         {currentStep === 2 && 'Achievement Details'}
                         {currentStep === 3 && 'Attachments & Review'}
                       </h2>
-                      <p className="text-white/45 text-sm mt-0.5">
+                      <p className="text-muted-foreground text-sm mt-0.5">
                         {currentStep === 1 && 'Tell us about yourself'}
                         {currentStep === 2 && 'Describe your achievement'}
                         {currentStep === 3 && 'Upload proof and review before submitting'}
@@ -608,7 +755,7 @@ export function StudentPortal() {
                     <div className="grid sm:grid-cols-2 gap-5">
                       <FieldWrapper>
                         <FieldLabel htmlFor="studentName" icon={User}>
-                          Student Name <span className="text-[#0ea5e9]">*</span>
+                          Student Name <span className="text-destructive">*</span>
                         </FieldLabel>
                         <StyledInput
                           id="studentName"
@@ -620,7 +767,7 @@ export function StudentPortal() {
 
                       <FieldWrapper>
                         <FieldLabel htmlFor="hallTicketNumber" icon={Hash}>
-                          Hall Ticket Number <span className="text-[#0ea5e9]">*</span>
+                          Hall Ticket Number <span className="text-destructive">*</span>
                         </FieldLabel>
                         <StyledInput
                           id="hallTicketNumber"
@@ -634,7 +781,7 @@ export function StudentPortal() {
                     <div className="grid sm:grid-cols-2 gap-5">
                       <FieldWrapper>
                         <FieldLabel htmlFor="year" icon={GraduationCap}>
-                          Currently Studying <span className="text-[#0ea5e9]">*</span>
+                          Currently Studying <span className="text-destructive">*</span>
                         </FieldLabel>
                         <StyledSelect
                           id="year"
@@ -651,7 +798,7 @@ export function StudentPortal() {
 
                       <FieldWrapper>
                         <FieldLabel htmlFor="stream" icon={BookOpen}>
-                          Stream / Course <span className="text-[#0ea5e9]">*</span>
+                          Stream / Course <span className="text-destructive">*</span>
                         </FieldLabel>
                         <StyledSelect
                           id="stream"
@@ -659,16 +806,16 @@ export function StudentPortal() {
                           onChange={set('stream')}
                           placeholder="Select stream"
                         >
-                          <SelectItem value="AI & DS">AI &amp; DS</SelectItem>
-                          <SelectItem value="Data Science">Data Science</SelectItem>
-                          <SelectItem value="Cybersecurity">Cybersecurity</SelectItem>
+                          <SelectItem value="AI&DS">AI&amp;DS</SelectItem>
+                          <SelectItem value="Data Science">Data science</SelectItem>
+                          <SelectItem value="Cybersecurity">Cyber security</SelectItem>
                         </StyledSelect>
                       </FieldWrapper>
                     </div>
 
                     <FieldWrapper>
                       <FieldLabel htmlFor="email" icon={Mail}>
-                        Email Address <span className="text-[#0ea5e9]">*</span>
+                        Email Address <span className="text-destructive">*</span>
                       </FieldLabel>
                       <StyledInput
                         id="email"
@@ -687,7 +834,7 @@ export function StudentPortal() {
                     {/* Award Name — radio buttons */}
                     <FieldWrapper>
                       <FieldLabel htmlFor="awardName" icon={Star}>
-                        Name of the Award / Medal <span className="text-[#0ea5e9]">*</span>
+                        Name of the Award / Medal <span className="text-destructive">*</span>
                       </FieldLabel>
                       <AwardRadioGroup
                         value={formData.awardName}
@@ -698,7 +845,7 @@ export function StudentPortal() {
                     {/* Team / Individual Toggle */}
                     <FieldWrapper>
                       <FieldLabel htmlFor="teamType" icon={Users}>
-                        Team / Individual <span className="text-[#0ea5e9]">*</span>
+                        Team / Individual <span className="text-destructive">*</span>
                       </FieldLabel>
                       <div className="flex gap-3 mt-1">
                         {(['team', 'individual'] as const).map((type) => {
@@ -713,8 +860,8 @@ export function StudentPortal() {
                                 flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl
                                 border-2 transition-all duration-200 cursor-pointer
                                 ${isSelected
-                                  ? 'bg-[#0ea5e9]/15 border-[#0ea5e9] text-[#0ea5e9] shadow-lg shadow-[#0ea5e9]/10'
-                                  : 'bg-white/5 border-white/10 text-white/50 hover:border-white/25 hover:text-white/80'
+                                  ? 'bg-primary/10 border-foreground text-foreground shadow-lg'
+                                  : 'bg-secondary border-border text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground'
                                 }
                               `}
                             >
@@ -733,7 +880,7 @@ export function StudentPortal() {
                     <FieldWrapper>
                       <FieldLabel htmlFor="achievementLevel" icon={Globe}>
                         Achievement Level (Inter-University / State / National / International){' '}
-                        <span className="text-[#0ea5e9]">*</span>
+                        <span className="text-destructive">*</span>
                       </FieldLabel>
                       <AchievementLevelGroup
                         value={formData.achievementLevel}
@@ -744,7 +891,7 @@ export function StudentPortal() {
                     <div className="grid sm:grid-cols-2 gap-5">
                       <FieldWrapper>
                         <FieldLabel htmlFor="eventName" icon={Trophy}>
-                          Name of the Event <span className="text-[#0ea5e9]">*</span>
+                          Name of the Event <span className="text-destructive">*</span>
                         </FieldLabel>
                         <StyledInput
                           id="eventName"
@@ -756,17 +903,16 @@ export function StudentPortal() {
 
                       <FieldWrapper>
                         <FieldLabel htmlFor="date" icon={Calendar}>
-                          Event Date <span className="text-[#0ea5e9]">*</span>
+                          Event Date <span className="text-destructive">*</span>
                         </FieldLabel>
                         <Input
                           id="date"
                           type="date"
                           value={formData.date}
                           onChange={(e) => set('date')(e.target.value)}
-                          className="bg-white/5 border-white/10 text-white
-                            focus:border-[#0ea5e9] focus:ring-1 focus:ring-[#0ea5e9]/30
-                            hover:border-white/20 transition-colors
-                            [color-scheme:dark]"
+                          className="bg-input-background border-border text-foreground
+                            focus:border-foreground focus:ring-1 focus:ring-foreground/30
+                            hover:border-muted-foreground/40 transition-colors"
                         />
                       </FieldWrapper>
                     </div>
@@ -776,46 +922,40 @@ export function StudentPortal() {
                 {/* ── STEP 3 ─────────────────────────────────────────────── */}
                 {currentStep === 3 && (
                   <div className="space-y-6">
-                    {/* Certificate Link */}
+                    {/* Certificate Upload */}
                     <FieldWrapper>
-                      <FieldLabel htmlFor="certificateLink" icon={Link2}>
-                        Certificate of Achievement (Google Drive Link){' '}
-                        <span className="text-[#0ea5e9]">*</span>
+                      <FieldLabel htmlFor="certificateFile" icon={Upload}>
+                        Certificate of Achievement{' '}
+                        <span className="text-destructive">*</span>
                       </FieldLabel>
-                      <StyledInput
-                        id="certificateLink"
-                        value={formData.certificateLink}
-                        onChange={set('certificateLink')}
-                        placeholder="https://drive.google.com/file/d/..."
+                      <FileUpload
+                        id="certificateFile"
+                        label="certificate image"
+                        file={formData.certificateFile}
+                        onChange={setFile('certificateFile')}
+                        required
                       />
-                      <div className="flex items-start gap-2 mt-2 p-3 rounded-lg bg-[#0ea5e9]/8 border border-[#0ea5e9]/20">
-                        <Info className="w-3.5 h-3.5 text-[#0ea5e9] flex-shrink-0 mt-0.5" />
-                        <p className="text-[#7dd3fc] text-xs">
-                          Please provide <span className="text-white">edit access</span> to the
-                          file before attaching the link.
+                      <div className="flex items-start gap-2 mt-2 p-3 rounded-lg bg-secondary border border-border">
+                        <Info className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                        <p className="text-muted-foreground text-xs">
+                          Upload a clear image of your certificate. Accepted formats:{' '}
+                          <span className="text-foreground font-medium">PNG, JPG, JPEG</span>.
                         </p>
                       </div>
                     </FieldWrapper>
 
-                    {/* Event Image Link */}
+                    {/* Event Image Upload */}
                     <FieldWrapper>
-                      <FieldLabel htmlFor="eventImageLink" icon={Image}>
-                        Upload Event Image (Google Drive Link)
-                        <span className="text-white/40 text-xs ml-1">(Optional)</span>
+                      <FieldLabel htmlFor="eventImageFile" icon={Image}>
+                        Event Image
+                        <span className="text-muted-foreground text-xs ml-1">(Optional)</span>
                       </FieldLabel>
-                      <StyledInput
-                        id="eventImageLink"
-                        value={formData.eventImageLink}
-                        onChange={set('eventImageLink')}
-                        placeholder="https://drive.google.com/file/d/..."
+                      <FileUpload
+                        id="eventImageFile"
+                        label="event image"
+                        file={formData.eventImageFile}
+                        onChange={setFile('eventImageFile')}
                       />
-                      <div className="flex items-start gap-2 mt-2 p-3 rounded-lg bg-[#0ea5e9]/8 border border-[#0ea5e9]/20">
-                        <Info className="w-3.5 h-3.5 text-[#0ea5e9] flex-shrink-0 mt-0.5" />
-                        <p className="text-[#7dd3fc] text-xs">
-                          Please provide <span className="text-white">edit access</span> to the
-                          file before attaching the link.
-                        </p>
-                      </div>
                     </FieldWrapper>
 
                     {/* Review Summary */}
@@ -824,13 +964,13 @@ export function StudentPortal() {
                 )}
 
                 {/* ── Navigation Buttons ────────────────────────────────── */}
-                <div className="flex items-center justify-between mt-10 pt-6 border-t border-white/8">
+                <div className="flex items-center justify-between mt-10 pt-6 border-t border-border">
                   {currentStep > 1 ? (
                     <Button
                       type="button"
                       variant="ghost"
                       onClick={handleBack}
-                      className="text-white/70 hover:text-white hover:bg-white/5 gap-2"
+                      className="text-muted-foreground hover:text-foreground hover:bg-accent gap-2"
                     >
                       <ChevronLeft className="w-4 h-4" />
                       Back
@@ -843,7 +983,7 @@ export function StudentPortal() {
                     <Button
                       type="button"
                       onClick={handleNext}
-                      className="bg-gradient-to-r from-[#0ea5e9] to-[#0284c7] hover:from-[#0284c7] hover:to-[#075985] text-white shadow-lg shadow-[#0ea5e9]/20 gap-2"
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg gap-2"
                     >
                       Next
                       <ChevronRight className="w-4 h-4" />
@@ -852,10 +992,20 @@ export function StudentPortal() {
                     <Button
                       type="button"
                       onClick={handleSubmit}
-                      className="bg-gradient-to-r from-[#0ea5e9] to-[#0284c7] hover:from-[#0284c7] hover:to-[#075985] text-white shadow-lg shadow-[#0ea5e9]/20 gap-2 px-8"
+                      disabled={uploading}
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg gap-2 px-8"
                     >
-                      <CheckCircle2 className="w-4 h-4" />
-                      Submit Achievement
+                      {uploading ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />
+                          Uploading...
+                        </div>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-4 h-4" />
+                          Submit Achievement
+                        </>
+                      )}
                     </Button>
                   )}
                 </div>
@@ -866,7 +1016,7 @@ export function StudentPortal() {
 
         {/* Footer note */}
         {!submitted && (
-          <p className="text-center text-white/35 text-xs mt-6 max-w-2xl mx-auto">
+          <p className="text-center text-muted-foreground/60 text-xs mt-6 max-w-2xl mx-auto">
             Your submission will be reviewed by the department admin before publishing.
           </p>
         )}

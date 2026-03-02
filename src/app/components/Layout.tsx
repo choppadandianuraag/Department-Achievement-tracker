@@ -1,8 +1,10 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router';
-import { Award, LayoutDashboard, Menu } from 'lucide-react';
+import { Award, Menu, Sun, Moon } from 'lucide-react';
+import vnrLogo from '/vnrvjiet_logo.jpeg';
 import { Button } from './ui/button';
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
+import { useTheme } from '../context/ThemeContext';
 
 interface LayoutProps {
   children: ReactNode;
@@ -10,48 +12,52 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
   const isStudentPortal = location.pathname.startsWith('/student');
-  const isAdminDashboard = location.pathname.startsWith('/admin');
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden bg-background text-foreground">
       {/* Grid Background */}
-      <div 
-        className="fixed inset-0 z-0"
+      <div
+        className="fixed inset-0 z-0 opacity-40"
         style={{
           backgroundImage: `
-            linear-gradient(rgba(14, 165, 233, 0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(14, 165, 233, 0.03) 1px, transparent 1px)
+            linear-gradient(var(--border) 1px, transparent 1px),
+            linear-gradient(90deg, var(--border) 1px, transparent 1px)
           `,
-          backgroundSize: '50px 50px'
+          backgroundSize: '50px 50px',
         }}
       />
-      
+
       {/* Gradient Overlay */}
-      <div 
+      <div
         className="fixed inset-0 z-0"
         style={{
           background: `
-            radial-gradient(circle at 20% 20%, rgba(14, 165, 233, 0.1) 0%, transparent 50%),
-            radial-gradient(circle at 80% 80%, rgba(56, 189, 248, 0.08) 0%, transparent 50%)
-          `
+            radial-gradient(circle at 20% 20%, var(--accent) 0%, transparent 50%),
+            radial-gradient(circle at 80% 80%, var(--muted) 0%, transparent 50%)
+          `,
         }}
       />
 
       {/* Header */}
-      <header className="relative z-10 border-b border-white/10 backdrop-blur-xl bg-[rgba(30,39,73,0.4)]">
+      <header className="relative z-10 border-b border-border backdrop-blur-xl bg-card/40">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0ea5e9] to-[#0284c7] flex items-center justify-center shadow-lg shadow-[#0ea5e9]/20">
-                <Award className="w-6 h-6 text-white" />
-              </div>
+              <img
+                src={vnrLogo}
+                alt="VNRVJIET Logo"
+                className="w-12 h-12 rounded-xl object-cover shadow-lg flex-shrink-0"
+              />
               <div>
-                <h1 className="font-['Plus_Jakarta_Sans'] font-bold text-lg text-white">
-                  Achievement Tracker
+                <h1 className="font-['Plus_Jakarta_Sans'] font-bold text-sm leading-tight text-foreground">
+                  VNR Vignana Jyothi Institute of
                 </h1>
-                <p className="text-xs text-white/60">Engineering Excellence</p>
+                <p className="font-['Plus_Jakarta_Sans'] font-bold text-sm leading-tight text-foreground">
+                  Engineering and Technology
+                </p>
               </div>
             </Link>
 
@@ -62,59 +68,57 @@ export function Layout({ children }: LayoutProps) {
                   variant={isStudentPortal ? 'default' : 'ghost'}
                   className={
                     isStudentPortal
-                      ? 'bg-[#0ea5e9] text-white hover:bg-[#0284c7]'
-                      : 'text-white/80 hover:text-white hover:bg-white/10'
+                      ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                   }
                 >
                   <Award className="w-4 h-4 mr-2" />
                   Student Portal
                 </Button>
               </Link>
-              <Link to="/admin">
-                <Button
-                  variant={isAdminDashboard ? 'default' : 'ghost'}
-                  className={
-                    isAdminDashboard
-                      ? 'bg-[#0ea5e9] text-white hover:bg-[#0284c7]'
-                      : 'text-white/80 hover:text-white hover:bg-white/10'
-                  }
-                >
-                  <LayoutDashboard className="w-4 h-4 mr-2" />
-                  Admin Dashboard
-                </Button>
-              </Link>
+
+              {/* Theme Toggle */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleTheme}
+                className="text-muted-foreground hover:text-foreground hover:bg-accent"
+              >
+                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </Button>
             </nav>
 
             {/* Mobile Navigation */}
-            <Sheet>
-              <SheetTrigger asChild className="md:hidden">
-                <Button variant="ghost" size="icon" className="text-white">
-                  <Menu className="w-6 h-6" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent className="bg-[#1e2749] border-white/10">
-                <nav className="flex flex-col gap-4 mt-8">
-                  <Link to="/student">
-                    <Button
-                      variant={isStudentPortal ? 'default' : 'ghost'}
-                      className="w-full justify-start"
-                    >
-                      <Award className="w-4 h-4 mr-2" />
-                      Student Portal
-                    </Button>
-                  </Link>
-                  <Link to="/admin">
-                    <Button
-                      variant={isAdminDashboard ? 'default' : 'ghost'}
-                      className="w-full justify-start"
-                    >
-                      <LayoutDashboard className="w-4 h-4 mr-2" />
-                      Admin Dashboard
-                    </Button>
-                  </Link>
-                </nav>
-              </SheetContent>
-            </Sheet>
+            <div className="md:hidden flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleTheme}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </Button>
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-foreground">
+                    <Menu className="w-6 h-6" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent className="bg-card border-border">
+                  <nav className="flex flex-col gap-4 mt-8">
+                    <Link to="/student">
+                      <Button
+                        variant={isStudentPortal ? 'default' : 'ghost'}
+                        className="w-full justify-start"
+                      >
+                        <Award className="w-4 h-4 mr-2" />
+                        Student Portal
+                      </Button>
+                    </Link>
+                  </nav>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
         </div>
       </header>

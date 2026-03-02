@@ -1,5 +1,4 @@
 import { useAchievements } from '../../context/AchievementContext';
-import { useAdminAuth } from '../../context/AdminAuthContext';
 import { Link } from 'react-router';
 import {
   Award,
@@ -14,7 +13,7 @@ import {
 } from 'lucide-react';
 
 export function Dashboard() {
-  const { achievements } = useAchievements();
+  const { achievements, loading } = useAchievements();
 
   const total = achievements.length;
   const pending = achievements.filter((a) => a.status === 'pending').length;
@@ -30,7 +29,7 @@ export function Dashboard() {
   }).length;
 
   const streamColor: Record<string, string> = {
-    'AI & DS': '#0ea5e9',
+    'AI&DS': 'var(--foreground)',
     'Data Science': '#8b5cf6',
     Cybersecurity: '#ef4444',
   };
@@ -50,8 +49,8 @@ export function Dashboard() {
       label: 'Total Achievements',
       value: total,
       icon: FileText,
-      color: '#0ea5e9',
-      gradient: 'linear-gradient(135deg, #0ea5e9, #0284c7)',
+      colorClass: 'text-foreground',
+      bgClass: 'bg-primary',
       note: 'All time',
       noteIcon: TrendingUp,
     },
@@ -59,8 +58,8 @@ export function Dashboard() {
       label: 'Pending Approvals',
       value: pending,
       icon: Clock,
-      color: '#f59e0b',
-      gradient: 'linear-gradient(135deg, #f59e0b, #d97706)',
+      colorClass: 'text-amber-600 dark:text-amber-400',
+      bgClass: 'bg-amber-500/20',
       note: 'Requires action',
       noteIcon: Clock,
     },
@@ -68,17 +67,17 @@ export function Dashboard() {
       label: "This Month's",
       value: thisMonth,
       icon: Award,
-      color: '#10b981',
-      gradient: 'linear-gradient(135deg, #10b981, #059669)',
-      note: 'Feb 2026',
+      colorClass: 'text-emerald-600 dark:text-emerald-400',
+      bgClass: 'bg-emerald-500/20',
+      note: new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' }),
       noteIcon: TrendingUp,
     },
     {
       label: 'International Awards',
       value: international,
       icon: Globe,
-      color: '#8b5cf6',
-      gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+      colorClass: 'text-violet-600 dark:text-violet-400',
+      bgClass: 'bg-violet-500/20',
       note: 'Approved',
       noteIcon: CheckCircle2,
     },
@@ -86,60 +85,55 @@ export function Dashboard() {
 
   const StreamBadge = ({ stream }: { stream?: string }) => (
     <span
-      className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-      style={{
-        background: `${streamColor[stream || ''] || '#6b7280'}20`,
-        color: streamColor[stream || ''] || '#9ca3af',
-        border: `1px solid ${streamColor[stream || ''] || '#6b7280'}40`,
-      }}
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border border-border bg-secondary text-muted-foreground"
     >
       {stream || 'N/A'}
     </span>
   );
 
+  if (loading) {
+    return (
+      <div className="p-6 lg:p-8 flex items-center justify-center min-h-[50vh]">
+        <div className="w-8 h-8 rounded-full border-2 border-foreground/20 border-t-foreground animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 lg:p-8 space-y-8">
       {/* Header */}
       <div>
-        <h1
-          className="text-white"
-          style={{ fontSize: '1.75rem', fontWeight: 700 }}
-        >
+        <h1 className="text-foreground" style={{ fontSize: '1.75rem', fontWeight: 700 }}>
           Dashboard
         </h1>
-        <p className="text-white/50 text-sm mt-1">
+        <p className="text-primary font-semibold text-sm mt-0.5">
+          Department of CSE-(DS,CYS) &amp; AI&amp;DS
+        </p>
+        <p className="text-muted-foreground text-sm mt-1">
           Overview of achievement submissions and approvals
         </p>
       </div>
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map(({ label, value, icon: Icon, gradient, color, note, noteIcon: NoteIcon }) => (
+        {statCards.map(({ label, value, icon: Icon, colorClass, bgClass, note, noteIcon: NoteIcon }) => (
           <div
             key={label}
-            className="rounded-2xl border border-white/8 p-5 flex flex-col gap-4"
-            style={{ background: 'rgba(20, 28, 60, 0.70)', backdropFilter: 'blur(20px)' }}
+            className="rounded-2xl border border-border p-5 flex flex-col gap-4 bg-card backdrop-blur-xl"
           >
             <div className="flex items-center justify-between">
-              <p className="text-white/55 text-sm leading-tight">{label}</p>
+              <p className="text-muted-foreground text-sm leading-tight">{label}</p>
               <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: gradient }}
+                className={`w-10 h-10 rounded-xl ${bgClass} flex items-center justify-center flex-shrink-0`}
               >
-                <Icon className="w-5 h-5 text-white" />
+                <Icon className={`w-5 h-5 ${bgClass === 'bg-primary' ? 'text-primary-foreground' : colorClass}`} />
               </div>
             </div>
             <div>
-              <p
-                className="text-white"
-                style={{ fontSize: '2rem', fontWeight: 700, lineHeight: 1 }}
-              >
+              <p className="text-foreground" style={{ fontSize: '2rem', fontWeight: 700, lineHeight: 1 }}>
                 {value}
               </p>
-              <p
-                className="text-xs mt-2 flex items-center gap-1"
-                style={{ color }}
-              >
+              <p className={`text-xs mt-2 flex items-center gap-1 ${colorClass}`}>
                 <NoteIcon className="w-3 h-3" />
                 {note}
               </p>
@@ -151,58 +145,49 @@ export function Dashboard() {
       {/* Two column layout */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Pending Approvals — preview */}
-        <div
-          className="rounded-2xl border border-white/8 overflow-hidden"
-          style={{ background: 'rgba(20, 28, 60, 0.70)', backdropFilter: 'blur(20px)' }}
-        >
-          <div
-            className="flex items-center justify-between px-6 py-4 border-b"
-            style={{ borderColor: 'rgba(255,255,255,0.07)' }}
-          >
+        <div className="rounded-2xl border border-border overflow-hidden bg-card backdrop-blur-xl">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-[#f59e0b]" />
-              <h3 className="text-white">Pending Approvals</h3>
+              <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <h3 className="text-foreground">Pending Approvals</h3>
               {pending > 0 && (
-                <span className="bg-[#f59e0b] text-[#0a1128] text-xs rounded-full px-2 py-0.5 font-bold">
+                <span className="bg-amber-500 text-white text-xs rounded-full px-2 py-0.5 font-bold">
                   {pending}
                 </span>
               )}
             </div>
             <Link
-              to="/admin/pending"
-              className="text-[#0ea5e9] text-xs flex items-center gap-1 hover:underline"
+              to="/adminaccess/pending"
+              className="text-foreground text-xs flex items-center gap-1 hover:underline"
             >
               View all <ChevronRight className="w-3 h-3" />
             </Link>
           </div>
-          <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+          <div className="divide-y divide-border">
             {recentPending.length === 0 ? (
               <div className="px-6 py-8 text-center">
-                <CheckCircle2 className="w-8 h-8 text-[#10b981] mx-auto mb-2" />
-                <p className="text-white/50 text-sm">No pending approvals!</p>
+                <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
+                <p className="text-muted-foreground text-sm">No pending approvals!</p>
               </div>
             ) : (
               recentPending.map((a) => (
                 <div
                   key={a.id}
-                  className="px-6 py-3.5 flex items-center gap-3 hover:bg-white/3 transition-colors"
+                  className="px-6 py-3.5 flex items-center gap-3 hover:bg-accent/50 transition-colors"
                 >
-                  <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: 'rgba(245,158,11,0.15)' }}
-                  >
-                    <Users className="w-4 h-4 text-[#f59e0b]" />
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/15 flex items-center justify-center flex-shrink-0">
+                    <Users className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-white text-sm font-medium">{a.studentName}</p>
+                      <p className="text-foreground text-sm font-medium">{a.studentName}</p>
                       <StreamBadge stream={a.stream} />
                     </div>
-                    <p className="text-white/50 text-xs mt-0.5 truncate">
+                    <p className="text-muted-foreground text-xs mt-0.5 truncate">
                       {a.awardName} · {a.eventName}
                     </p>
                   </div>
-                  <span className="text-white/30 text-xs whitespace-nowrap">
+                  <span className="text-muted-foreground/50 text-xs whitespace-nowrap">
                     {new Date(a.submittedAt).toLocaleDateString('en-IN', {
                       day: 'numeric',
                       month: 'short',
@@ -215,52 +200,43 @@ export function Dashboard() {
         </div>
 
         {/* Recently Approved */}
-        <div
-          className="rounded-2xl border border-white/8 overflow-hidden"
-          style={{ background: 'rgba(20, 28, 60, 0.70)', backdropFilter: 'blur(20px)' }}
-        >
-          <div
-            className="flex items-center justify-between px-6 py-4 border-b"
-            style={{ borderColor: 'rgba(255,255,255,0.07)' }}
-          >
+        <div className="rounded-2xl border border-border overflow-hidden bg-card backdrop-blur-xl">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-[#10b981]" />
-              <h3 className="text-white">Recently Approved</h3>
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <h3 className="text-foreground">Recently Approved</h3>
             </div>
             <Link
-              to="/admin/achievements"
-              className="text-[#0ea5e9] text-xs flex items-center gap-1 hover:underline"
+              to="/adminaccess/achievements"
+              className="text-foreground text-xs flex items-center gap-1 hover:underline"
             >
               View all <ChevronRight className="w-3 h-3" />
             </Link>
           </div>
-          <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+          <div className="divide-y divide-border">
             {recentApproved.length === 0 ? (
               <div className="px-6 py-8 text-center">
-                <p className="text-white/50 text-sm">No approved achievements yet.</p>
+                <p className="text-muted-foreground text-sm">No approved achievements yet.</p>
               </div>
             ) : (
               recentApproved.map((a) => (
                 <div
                   key={a.id}
-                  className="px-6 py-3.5 flex items-center gap-3 hover:bg-white/3 transition-colors"
+                  className="px-6 py-3.5 flex items-center gap-3 hover:bg-accent/50 transition-colors"
                 >
-                  <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: 'rgba(16,185,129,0.15)' }}
-                  >
-                    <Award className="w-4 h-4 text-[#10b981]" />
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center flex-shrink-0">
+                    <Award className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-white text-sm font-medium">{a.studentName}</p>
+                      <p className="text-foreground text-sm font-medium">{a.studentName}</p>
                       <StreamBadge stream={a.stream} />
                     </div>
-                    <p className="text-white/50 text-xs mt-0.5 truncate">
+                    <p className="text-muted-foreground text-xs mt-0.5 truncate">
                       {a.awardName} · {a.achievementLevel}
                     </p>
                   </div>
-                  <CheckCircle2 className="w-4 h-4 text-[#10b981] flex-shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                 </div>
               ))
             )}
@@ -269,26 +245,23 @@ export function Dashboard() {
       </div>
 
       {/* Quick stats bar */}
-      <div
-        className="rounded-2xl border border-white/8 p-6"
-        style={{ background: 'rgba(20, 28, 60, 0.70)', backdropFilter: 'blur(20px)' }}
-      >
-        <h3 className="text-white mb-5 flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-[#0ea5e9]" />
+      <div className="rounded-2xl border border-border p-6 bg-card backdrop-blur-xl">
+        <h3 className="text-foreground mb-5 flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-muted-foreground" />
           Achievements by Stream
         </h3>
         <div className="space-y-4">
-          {['AI & DS', 'Data Science', 'Cybersecurity'].map((stream) => {
+          {['AI&DS', 'Data Science', 'Cybersecurity'].map((stream) => {
             const count = achievements.filter((a) => a.stream === stream && a.status === 'approved').length;
             const pct = approved > 0 ? Math.round((count / approved) * 100) : 0;
             const color = streamColor[stream];
             return (
               <div key={stream}>
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-white/70 text-sm">{stream}</span>
-                  <span className="text-white/50 text-xs">{count} approved</span>
+                  <span className="text-muted-foreground text-sm">{stream}</span>
+                  <span className="text-muted-foreground/60 text-xs">{count} approved</span>
                 </div>
-                <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+                <div className="h-2 rounded-full bg-secondary overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-700"
                     style={{ width: `${pct}%`, background: color }}

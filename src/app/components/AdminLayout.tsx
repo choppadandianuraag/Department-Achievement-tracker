@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import vnrLogo from '/vnrvjiet_logo.jpeg';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import { useAchievements } from '../context/AchievementContext';
+import { useTheme } from '../context/ThemeContext';
 import {
   LayoutDashboard,
   Clock,
@@ -9,23 +11,25 @@ import {
   BarChart2,
   Settings,
   LogOut,
-  Award,
   ChevronRight,
   Menu,
   X,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 const navItems = [
-  { label: 'Dashboard', path: '/admin', icon: LayoutDashboard, exact: true },
-  { label: 'Pending Approvals', path: '/admin/pending', icon: Clock, badge: true },
-  { label: 'All Achievements', path: '/admin/achievements', icon: Database },
-  { label: 'Analytics', path: '/admin/analytics', icon: BarChart2 },
-  { label: 'Settings', path: '/admin/settings', icon: Settings },
+  { label: 'Dashboard', path: '/adminaccess', icon: LayoutDashboard, exact: true },
+  { label: 'Pending Approvals', path: '/adminaccess/pending', icon: Clock, badge: true },
+  { label: 'All Achievements', path: '/adminaccess/achievements', icon: Database },
+  { label: 'Analytics', path: '/adminaccess/analytics', icon: BarChart2 },
+  { label: 'Settings', path: '/adminaccess/settings', icon: Settings },
 ];
 
 export function AdminLayout() {
   const { isLoggedIn, logout } = useAdminAuth();
   const { achievements } = useAchievements();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -34,31 +38,31 @@ export function AdminLayout() {
 
   useEffect(() => {
     if (!isLoggedIn) {
-      navigate('/admin/login');
+      navigate('/adminaccess/login');
     }
   }, [isLoggedIn, navigate]);
 
   if (!isLoggedIn) return null;
 
   const isActive = (path: string, exact?: boolean) => {
-    if (exact) return location.pathname === path || location.pathname === '/admin/';
+    if (exact) return location.pathname === path || location.pathname === '/adminaccess/';
     return location.pathname.startsWith(path);
   };
 
   const SidebarContent = () => (
     <>
       {/* Logo */}
-      <div className="p-5 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+      <div className="p-4 border-b border-border">
         <Link to="/" className="flex items-center gap-3 group">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shadow-[#0ea5e9]/20 flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg, #0ea5e9, #0284c7)' }}
-          >
-            <Award className="w-5 h-5 text-white" />
-          </div>
+          <img
+            src={vnrLogo}
+            alt="VNRVJIET Logo"
+            className="w-10 h-10 rounded-xl object-cover shadow-lg flex-shrink-0"
+          />
           <div>
-            <p className="text-white text-sm font-semibold leading-tight">Achievement</p>
-            <p className="text-[#0ea5e9] text-xs">Tracker · Admin</p>
+            <p className="text-foreground text-xs font-semibold leading-tight">VNR Vignana Jyothi</p>
+            <p className="text-foreground text-xs font-semibold leading-tight">Institute of Engg &amp; Tech</p>
+            <p className="text-muted-foreground text-[10px] mt-0.5">Admin Panel</p>
           </div>
         </Link>
       </div>
@@ -74,47 +78,42 @@ export function AdminLayout() {
               onClick={() => setSidebarOpen(false)}
               className={`
                 flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative
-                ${
-                  active
-                    ? 'text-[#0ea5e9]'
-                    : 'text-white/55 hover:text-white/90'
+                ${active
+                  ? 'text-foreground bg-accent border-l-2 border-foreground pl-[10px]'
+                  : 'text-muted-foreground hover:text-foreground border-l-2 border-transparent'
                 }
               `}
-              style={
-                active
-                  ? {
-                      background: 'rgba(14,165,233,0.12)',
-                      borderLeft: '2px solid #0ea5e9',
-                      paddingLeft: '10px',
-                    }
-                  : {
-                      borderLeft: '2px solid transparent',
-                    }
-              }
             >
-              <Icon className={`w-4 h-4 flex-shrink-0 ${active ? 'text-[#0ea5e9]' : ''}`} />
+              <Icon className={`w-4 h-4 flex-shrink-0 ${active ? 'text-foreground' : ''}`} />
               <span className="text-sm font-medium">{label}</span>
               {badge && pendingCount > 0 && (
-                <span className="ml-auto bg-[#f59e0b] text-[#0a1128] text-xs rounded-full px-2 py-0.5 font-bold min-w-[20px] text-center">
+                <span className="ml-auto bg-amber-500 text-white text-xs rounded-full px-2 py-0.5 font-bold min-w-[20px] text-center">
                   {pendingCount}
                 </span>
               )}
               {!badge && active && (
-                <ChevronRight className="w-3.5 h-3.5 ml-auto text-[#0ea5e9]/60" />
+                <ChevronRight className="w-3.5 h-3.5 ml-auto text-muted-foreground" />
               )}
             </Link>
           );
         })}
       </nav>
 
-      {/* Bottom — logout */}
-      <div className="p-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+      {/* Bottom — theme toggle + logout */}
+      <div className="p-3 border-t border-border space-y-0.5">
+        <button
+          onClick={toggleTheme}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-200"
+        >
+          {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          <span className="text-sm font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+        </button>
         <button
           onClick={() => {
             logout();
-            navigate('/admin/login');
+            navigate('/adminaccess/login');
           }}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full text-white/50 hover:bg-red-500/10 hover:text-red-400 transition-all duration-200"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
         >
           <LogOut className="w-4 h-4" />
           <span className="text-sm font-medium">Logout</span>
@@ -124,14 +123,14 @@ export function AdminLayout() {
   );
 
   return (
-    <div className="min-h-screen flex relative" style={{ background: '#0a1128' }}>
+    <div className="min-h-screen flex relative bg-background">
       {/* Grid background */}
       <div
-        className="fixed inset-0 z-0"
+        className="fixed inset-0 z-0 opacity-30"
         style={{
           backgroundImage: `
-            linear-gradient(rgba(14, 165, 233, 0.025) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(14, 165, 233, 0.025) 1px, transparent 1px)
+            linear-gradient(var(--border) 1px, transparent 1px),
+            linear-gradient(90deg, var(--border) 1px, transparent 1px)
           `,
           backgroundSize: '50px 50px',
         }}
@@ -139,12 +138,7 @@ export function AdminLayout() {
 
       {/* ── Desktop Sidebar ─────────────────────────────────────────────── */}
       <aside
-        className="hidden lg:flex w-56 flex-shrink-0 flex-col fixed top-0 bottom-0 left-0 z-20"
-        style={{
-          background: 'rgba(8, 14, 34, 0.97)',
-          borderRight: '1px solid rgba(255,255,255,0.07)',
-          backdropFilter: 'blur(20px)',
-        }}
+        className="hidden lg:flex w-56 flex-shrink-0 flex-col fixed top-0 bottom-0 left-0 z-20 bg-sidebar border-r border-sidebar-border backdrop-blur-xl"
       >
         <SidebarContent />
       </aside>
@@ -153,19 +147,13 @@ export function AdminLayout() {
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-30 flex">
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-background/60 backdrop-blur-sm"
             onClick={() => setSidebarOpen(false)}
           />
-          <aside
-            className="relative z-40 w-56 flex flex-col h-full"
-            style={{
-              background: 'rgba(8, 14, 34, 0.98)',
-              borderRight: '1px solid rgba(255,255,255,0.07)',
-            }}
-          >
+          <aside className="relative z-40 w-56 flex flex-col h-full bg-sidebar border-r border-sidebar-border">
             <button
               onClick={() => setSidebarOpen(false)}
-              className="absolute top-4 right-4 text-white/50 hover:text-white"
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
             >
               <X className="w-5 h-5" />
             </button>
@@ -177,29 +165,27 @@ export function AdminLayout() {
       {/* ── Main Content ─────────────────────────────────────────────────── */}
       <main className="flex-1 lg:ml-56 relative z-10 min-h-screen flex flex-col">
         {/* Mobile top bar */}
-        <div
-          className="lg:hidden flex items-center gap-3 px-4 py-3 border-b sticky top-0 z-10"
-          style={{
-            background: 'rgba(8, 14, 34, 0.95)',
-            borderColor: 'rgba(255,255,255,0.07)',
-            backdropFilter: 'blur(20px)',
-          }}
-        >
+        <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-border sticky top-0 z-10 bg-background/95 backdrop-blur-xl">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="text-white/60 hover:text-white transition-colors"
+            className="text-muted-foreground hover:text-foreground transition-colors"
           >
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
-            <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #0ea5e9, #0284c7)' }}
-            >
-              <Award className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-white text-sm font-semibold">Achievement Tracker</span>
+            <img
+              src={vnrLogo}
+              alt="VNRVJIET Logo"
+              className="w-7 h-7 rounded-lg object-cover shadow-sm flex-shrink-0"
+            />
+            <span className="text-foreground text-sm font-semibold">VNRVJIET Achievement Tracker</span>
           </div>
+          <button
+            onClick={toggleTheme}
+            className="ml-auto text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
         </div>
 
         <div className="flex-1">

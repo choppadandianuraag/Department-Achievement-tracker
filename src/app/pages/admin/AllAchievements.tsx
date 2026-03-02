@@ -18,22 +18,17 @@ import {
   Trophy,
   Globe,
   Calendar,
-  Link2,
   Users,
   Mail,
+  Image,
+  Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const STREAM_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  'AI & DS': { bg: 'rgba(14,165,233,0.15)', text: '#0ea5e9', border: 'rgba(14,165,233,0.3)' },
-  'Data Science': { bg: 'rgba(139,92,246,0.15)', text: '#8b5cf6', border: 'rgba(139,92,246,0.3)' },
-  Cybersecurity: { bg: 'rgba(239,68,68,0.15)', text: '#ef4444', border: 'rgba(239,68,68,0.3)' },
-};
-
-const STATUS_CONFIG = {
-  approved: { color: '#10b981', bg: 'rgba(16,185,129,0.15)', border: 'rgba(16,185,129,0.3)', icon: CheckCircle2 },
-  pending: { color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.3)', icon: Clock },
-  rejected: { color: '#ef4444', bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.3)', icon: XCircle },
+const STATUS_CONFIG: Record<string, { className: string; icon: typeof CheckCircle2 }> = {
+  approved: { className: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30', icon: CheckCircle2 },
+  pending: { className: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30', icon: Clock },
+  rejected: { className: 'bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30', icon: XCircle },
 };
 
 type SortKey = 'studentName' | 'year' | 'stream' | 'achievementLevel' | 'date' | 'status';
@@ -47,7 +42,6 @@ function DetailModal({
   achievement: Achievement;
   onClose: () => void;
 }) {
-  const sc = STREAM_COLORS[achievement.stream || ''];
   const sta = STATUS_CONFIG[achievement.status];
   const SIcon = sta.icon;
 
@@ -70,47 +64,32 @@ function DetailModal({
     {
       icon: Calendar,
       label: 'Event Date',
-      value: new Date(achievement.date + 'T00:00:00').toLocaleDateString('en-IN', {
+      value: achievement.date ? new Date(achievement.date + 'T00:00:00').toLocaleDateString('en-IN', {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
-      }),
+      }) : '—',
     },
+    { icon: Calendar, label: 'Academic Year', value: achievement.academicYear },
   ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-background/60 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div
-        className="relative z-10 w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl overflow-hidden"
-        style={{
-          background: 'rgba(12, 18, 45, 0.98)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          backdropFilter: 'blur(20px)',
-        }}
-      >
+      <div className="relative z-10 w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl overflow-hidden bg-card border border-border backdrop-blur-xl">
         {/* Header */}
-        <div
-          className="flex items-center justify-between px-6 py-5 border-b flex-shrink-0"
-          style={{ borderColor: 'rgba(255,255,255,0.07)' }}
-        >
+        <div className="flex items-center justify-between px-6 py-5 border-b border-border flex-shrink-0">
           <div>
-            <h3 className="text-white">{achievement.studentName}</h3>
+            <h3 className="text-foreground">{achievement.studentName}</h3>
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              {sc && (
-                <span
-                  className="px-2 py-0.5 rounded-full text-xs font-medium"
-                  style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}` }}
-                >
-                  {achievement.stream}
-                </span>
-              )}
+              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-muted-foreground border border-border">
+                {achievement.stream}
+              </span>
               <span
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium capitalize"
-                style={{ background: sta.bg, color: sta.color, border: `1px solid ${sta.border}` }}
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${sta.className}`}
               >
                 <SIcon className="w-3 h-3" />
                 {achievement.status}
@@ -119,7 +98,7 @@ function DetailModal({
           </div>
           <button
             onClick={onClose}
-            className="text-white/40 hover:text-white/80 transition-colors p-2 rounded-xl hover:bg-white/5"
+            className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-xl hover:bg-accent"
           >
             <X className="w-5 h-5" />
           </button>
@@ -130,51 +109,61 @@ function DetailModal({
           {rows.map(({ icon: Icon, label, value }) => (
             <div
               key={label}
-              className="flex items-start gap-3 p-3 rounded-xl"
-              style={{ background: 'rgba(255,255,255,0.03)' }}
+              className="flex items-start gap-3 p-3 rounded-xl bg-accent/50"
             >
-              <div className="w-7 h-7 rounded-lg bg-[#0ea5e9]/15 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Icon className="w-3.5 h-3.5 text-[#0ea5e9]" />
+              <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Icon className="w-3.5 h-3.5 text-muted-foreground" />
               </div>
               <div className="min-w-0">
-                <p className="text-white/40 text-xs">{label}</p>
-                <p className="text-white text-sm mt-0.5 break-all">{value || '—'}</p>
+                <p className="text-muted-foreground text-xs">{label}</p>
+                <p className="text-foreground text-sm mt-0.5 break-all">{value || '—'}</p>
               </div>
             </div>
           ))}
 
+          {/* Certificate image/link */}
           {achievement.certificateLink && (
-            <a
-              href={achievement.certificateLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors"
-              style={{ background: 'rgba(14,165,233,0.08)', border: '1px solid rgba(14,165,233,0.2)' }}
-            >
-              <Link2 className="w-4 h-4 text-[#0ea5e9] flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-white/40 text-xs">Certificate Link</p>
-                <p className="text-[#0ea5e9] text-sm mt-0.5 truncate">{achievement.certificateLink}</p>
+            <div className="p-3 rounded-xl bg-accent/50 border border-border">
+              <div className="flex items-center gap-2 mb-2">
+                <Image className="w-3.5 h-3.5 text-muted-foreground" />
+                <p className="text-muted-foreground text-xs">Certificate</p>
               </div>
-              <ExternalLink className="w-4 h-4 text-[#0ea5e9] flex-shrink-0" />
-            </a>
+              {achievement.certificateLink.match(/\.(png|jpg|jpeg)$/i) || achievement.certificateLink.includes('supabase') ? (
+                <img src={achievement.certificateLink} alt="Certificate" className="w-full rounded-lg border border-border" />
+              ) : (
+                <a
+                  href={achievement.certificateLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-foreground text-sm flex items-center gap-1 hover:underline break-all"
+                >
+                  <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                  View Certificate
+                </a>
+              )}
+            </div>
           )}
 
           {achievement.eventImageLink && (
-            <a
-              href={achievement.eventImageLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors"
-              style={{ background: 'rgba(14,165,233,0.08)', border: '1px solid rgba(14,165,233,0.2)' }}
-            >
-              <Link2 className="w-4 h-4 text-[#0ea5e9] flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-white/40 text-xs">Event Image Link</p>
-                <p className="text-[#0ea5e9] text-sm mt-0.5 truncate">{achievement.eventImageLink}</p>
+            <div className="p-3 rounded-xl bg-accent/50 border border-border">
+              <div className="flex items-center gap-2 mb-2">
+                <Image className="w-3.5 h-3.5 text-muted-foreground" />
+                <p className="text-muted-foreground text-xs">Event Image</p>
               </div>
-              <ExternalLink className="w-4 h-4 text-[#0ea5e9] flex-shrink-0" />
-            </a>
+              {achievement.eventImageLink.match(/\.(png|jpg|jpeg)$/i) || achievement.eventImageLink.includes('supabase') ? (
+                <img src={achievement.eventImageLink} alt="Event" className="w-full rounded-lg border border-border" />
+              ) : (
+                <a
+                  href={achievement.eventImageLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-foreground text-sm flex items-center gap-1 hover:underline break-all"
+                >
+                  <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                  View Image
+                </a>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -184,16 +173,23 @@ function DetailModal({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export function AllAchievements() {
-  const { achievements } = useAchievements();
+  const { achievements, deleteAchievement } = useAchievements();
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterStream, setFilterStream] = useState('all');
   const [filterLevel, setFilterLevel] = useState('all');
+  const [filterYear, setFilterYear] = useState('all');
+  const [filterAcademicYear, setFilterAcademicYear] = useState('all');
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [selectedRow, setSelectedRow] = useState<Achievement | null>(null);
   const [page, setPage] = useState(1);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const perPage = 10;
+
+  const academicYears = [...new Set(achievements.map((a) => a.academicYear).filter((y): y is string => !!y))].sort().reverse();
+  const studentYears = [...new Set(achievements.map((a) => a.year).filter((y): y is string => !!y))].sort();
+  const streams = [...new Set(achievements.map((a) => a.stream).filter((s): s is string => !!s))].sort();
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -218,7 +214,9 @@ export function AllAchievements() {
         const matchStatus = filterStatus === 'all' || a.status === filterStatus;
         const matchStream = filterStream === 'all' || a.stream === filterStream;
         const matchLevel = filterLevel === 'all' || a.achievementLevel === filterLevel;
-        return matchSearch && matchStatus && matchStream && matchLevel;
+        const matchYear = filterYear === 'all' || a.year === filterYear;
+        const matchAcademicYear = filterAcademicYear === 'all' || a.academicYear === filterAcademicYear;
+        return matchSearch && matchStatus && matchStream && matchLevel && matchYear && matchAcademicYear;
       })
       .sort((a, b) => {
         let valA: string = '';
@@ -232,7 +230,7 @@ export function AllAchievements() {
         const cmp = valA.localeCompare(valB);
         return sortDir === 'asc' ? cmp : -cmp;
       });
-  }, [achievements, search, filterStatus, filterStream, filterLevel, sortKey, sortDir]);
+  }, [achievements, search, filterStatus, filterStream, filterLevel, filterYear, filterAcademicYear, sortKey, sortDir]);
 
   const totalPages = Math.ceil(filtered.length / perPage);
   const paginated = filtered.slice((page - 1) * perPage, page * perPage);
@@ -240,7 +238,7 @@ export function AllAchievements() {
   const exportCSV = () => {
     const headers = [
       '#', 'Name', 'Hall Ticket', 'Year', 'Stream', 'Award', 'Event',
-      'Level', 'Team/Individual', 'Date', 'Certificate Link', 'Image Link', 'Status',
+      'Level', 'Team/Individual', 'Date', 'Academic Year', 'Certificate Link', 'Image Link', 'Status',
     ];
     const rows = filtered.map((a, i) => [
       i + 1,
@@ -253,6 +251,7 @@ export function AllAchievements() {
       a.achievementLevel || '',
       a.teamType || '',
       a.date,
+      a.academicYear,
       a.certificateLink || '',
       a.eventImageLink || '',
       a.status,
@@ -269,15 +268,15 @@ export function AllAchievements() {
   };
 
   const SortIcon = ({ col }: { col: SortKey }) => {
-    if (sortKey !== col) return <ChevronUp className="w-3 h-3 text-white/20" />;
+    if (sortKey !== col) return <ChevronUp className="w-3 h-3 text-muted-foreground/30" />;
     return sortDir === 'asc'
-      ? <ChevronUp className="w-3 h-3 text-[#0ea5e9]" />
-      : <ChevronDown className="w-3 h-3 text-[#0ea5e9]" />;
+      ? <ChevronUp className="w-3 h-3 text-foreground" />
+      : <ChevronDown className="w-3 h-3 text-foreground" />;
   };
 
   const SortableHeader = ({ col, label }: { col: SortKey; label: string }) => (
     <th
-      className="px-4 py-3 text-left text-xs font-medium text-white/50 cursor-pointer select-none hover:text-white/80 transition-colors"
+      className="px-4 py-3 text-left text-xs font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors"
       onClick={() => handleSort(col)}
     >
       <span className="flex items-center gap-1">
@@ -291,18 +290,18 @@ export function AllAchievements() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-white" style={{ fontSize: '1.75rem', fontWeight: 700 }}>
+          <h1 className="text-foreground" style={{ fontSize: '1.75rem', fontWeight: 700 }}>
             All Achievements
           </h1>
-          <p className="text-white/50 text-sm mt-1">
+          <p className="text-muted-foreground text-sm mt-1">
             Complete database of all student achievement submissions
           </p>
         </div>
         <button
           onClick={exportCSV}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium
-            bg-[#0ea5e9]/15 text-[#0ea5e9] border border-[#0ea5e9]/30
-            hover:bg-[#0ea5e9]/25 transition-all duration-200"
+            bg-primary/10 text-foreground border border-border
+            hover:bg-primary/20 transition-all duration-200"
         >
           <Download className="w-4 h-4" />
           Export CSV
@@ -310,30 +309,26 @@ export function AllAchievements() {
       </div>
 
       {/* Filters */}
-      <div
-        className="rounded-2xl border border-white/8 p-4"
-        style={{ background: 'rgba(20, 28, 60, 0.70)', backdropFilter: 'blur(20px)' }}
-      >
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="rounded-2xl border border-border p-4 bg-card backdrop-blur-xl">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
           {/* Search */}
           <div className="relative sm:col-span-2 lg:col-span-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
               placeholder="Search name, ticket, award..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              className="w-full pl-9 pr-3 py-2 rounded-xl text-sm text-white placeholder:text-white/30
-                bg-white/5 border border-white/10 focus:border-[#0ea5e9] focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]/30 transition-colors"
+              className="w-full pl-9 pr-3 py-2 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50
+                bg-input-background border border-border focus:border-foreground focus:outline-none focus:ring-1 focus:ring-ring/30 transition-colors"
             />
           </div>
           {/* Status */}
           <select
             value={filterStatus}
             onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
-            className="px-3 py-2 rounded-xl text-sm text-white bg-white/5 border border-white/10
-              focus:border-[#0ea5e9] focus:outline-none transition-colors"
-            style={{ colorScheme: 'dark' }}
+            className="px-3 py-2 rounded-xl text-sm text-foreground bg-input-background border border-border
+              focus:border-foreground focus:outline-none transition-colors"
           >
             <option value="all">All Statuses</option>
             <option value="approved">Approved</option>
@@ -344,12 +339,11 @@ export function AllAchievements() {
           <select
             value={filterStream}
             onChange={(e) => { setFilterStream(e.target.value); setPage(1); }}
-            className="px-3 py-2 rounded-xl text-sm text-white bg-white/5 border border-white/10
-              focus:border-[#0ea5e9] focus:outline-none transition-colors"
-            style={{ colorScheme: 'dark' }}
+            className="px-3 py-2 rounded-xl text-sm text-foreground bg-input-background border border-border
+              focus:border-foreground focus:outline-none transition-colors"
           >
             <option value="all">All Streams</option>
-            {['AI & DS', 'Data Science', 'Cybersecurity'].map((s) => (
+            {streams.map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
@@ -357,43 +351,78 @@ export function AllAchievements() {
           <select
             value={filterLevel}
             onChange={(e) => { setFilterLevel(e.target.value); setPage(1); }}
-            className="px-3 py-2 rounded-xl text-sm text-white bg-white/5 border border-white/10
-              focus:border-[#0ea5e9] focus:outline-none transition-colors"
-            style={{ colorScheme: 'dark' }}
+            className="px-3 py-2 rounded-xl text-sm text-foreground bg-input-background border border-border
+              focus:border-foreground focus:outline-none transition-colors"
           >
             <option value="all">All Levels</option>
             {['Inter-University', 'State', 'National', 'International'].map((l) => (
               <option key={l} value={l}>{l}</option>
             ))}
           </select>
+          {/* Student Year */}
+          <select
+            value={filterYear}
+            onChange={(e) => { setFilterYear(e.target.value); setPage(1); }}
+            className="px-3 py-2 rounded-xl text-sm text-foreground bg-input-background border border-border
+              focus:border-foreground focus:outline-none transition-colors"
+          >
+            <option value="all">All Years</option>
+            {studentYears.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+          {/* Academic Year */}
+          <select
+            value={filterAcademicYear}
+            onChange={(e) => { setFilterAcademicYear(e.target.value); setPage(1); }}
+            className="px-3 py-2 rounded-xl text-sm text-foreground bg-input-background border border-border
+              focus:border-foreground focus:outline-none transition-colors"
+          >
+            <option value="all">All Academic Years</option>
+            {academicYears.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
         </div>
 
         {/* Active filters */}
-        {(search || filterStatus !== 'all' || filterStream !== 'all' || filterLevel !== 'all') && (
+        {(search || filterStatus !== 'all' || filterStream !== 'all' || filterLevel !== 'all' || filterAcademicYear !== 'all') && (
           <div className="flex items-center gap-2 mt-3 flex-wrap">
-            <span className="text-white/40 text-xs">Active filters:</span>
+            <span className="text-muted-foreground text-xs">Active filters:</span>
             {search && (
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#0ea5e9]/15 text-[#0ea5e9] text-xs border border-[#0ea5e9]/25">
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary text-foreground text-xs border border-border">
                 "{search}"
                 <button onClick={() => setSearch('')}><X className="w-3 h-3" /></button>
               </span>
             )}
             {filterStatus !== 'all' && (
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10 text-white/70 text-xs border border-white/15">
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary text-muted-foreground text-xs border border-border">
                 {filterStatus}
                 <button onClick={() => setFilterStatus('all')}><X className="w-3 h-3" /></button>
               </span>
             )}
             {filterStream !== 'all' && (
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10 text-white/70 text-xs border border-white/15">
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary text-muted-foreground text-xs border border-border">
                 {filterStream}
                 <button onClick={() => setFilterStream('all')}><X className="w-3 h-3" /></button>
               </span>
             )}
             {filterLevel !== 'all' && (
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10 text-white/70 text-xs border border-white/15">
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary text-muted-foreground text-xs border border-border">
                 {filterLevel}
                 <button onClick={() => setFilterLevel('all')}><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            {filterYear !== 'all' && (
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary text-muted-foreground text-xs border border-border">
+                {filterYear}
+                <button onClick={() => setFilterYear('all')}><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            {filterAcademicYear !== 'all' && (
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary text-muted-foreground text-xs border border-border">
+                {filterAcademicYear}
+                <button onClick={() => setFilterAcademicYear('all')}><X className="w-3 h-3" /></button>
               </span>
             )}
           </div>
@@ -401,107 +430,90 @@ export function AllAchievements() {
       </div>
 
       {/* Results summary */}
-      <p className="text-white/40 text-sm">
-        <span className="text-white/70">{filtered.length}</span> records found
+      <p className="text-muted-foreground text-sm">
+        <span className="text-foreground">{filtered.length}</span> records found
       </p>
 
       {/* Table */}
-      <div
-        className="rounded-2xl border border-white/8 overflow-hidden"
-        style={{ background: 'rgba(20, 28, 60, 0.70)', backdropFilter: 'blur(20px)' }}
-      >
+      <div className="rounded-2xl border border-border overflow-hidden bg-card backdrop-blur-xl">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                <th className="px-4 py-3 text-left text-xs font-medium text-white/50 w-10">#</th>
+              <tr className="border-b border-border">
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground w-10">#</th>
                 <SortableHeader col="studentName" label="Name" />
-                <th className="px-4 py-3 text-left text-xs font-medium text-white/50">Hall Ticket</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Hall Ticket</th>
                 <SortableHeader col="year" label="Year" />
                 <SortableHeader col="stream" label="Stream" />
-                <th className="px-4 py-3 text-left text-xs font-medium text-white/50">Award</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-white/50">Event</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Award</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Event</th>
                 <SortableHeader col="achievementLevel" label="Level" />
-                <th className="px-4 py-3 text-left text-xs font-medium text-white/50">Type</th>
                 <SortableHeader col="date" label="Date" />
-                <th className="px-4 py-3 text-left text-xs font-medium text-white/50">Cert.</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">AY</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Cert.</th>
                 <SortableHeader col="status" label="Status" />
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground w-20">Delete</th>
               </tr>
             </thead>
             <tbody>
               {paginated.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="px-4 py-12 text-center text-white/40 text-sm">
+                  <td colSpan={13} className="px-4 py-12 text-center text-muted-foreground text-sm">
                     No achievements match your search/filter criteria.
                   </td>
                 </tr>
               ) : (
                 paginated.map((a, idx) => {
-                  const sc = STREAM_COLORS[a.stream || ''];
                   const sta = STATUS_CONFIG[a.status];
                   const SIcon = sta.icon;
                   return (
                     <tr
                       key={a.id}
-                      className="cursor-pointer transition-colors"
-                      style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                      className="cursor-pointer transition-colors border-b border-border hover:bg-accent/50"
                       onClick={() => setSelectedRow(a)}
-                      onMouseEnter={(e) =>
-                        ((e.currentTarget as HTMLTableRowElement).style.background = 'rgba(255,255,255,0.03)')
-                      }
-                      onMouseLeave={(e) =>
-                        ((e.currentTarget as HTMLTableRowElement).style.background = '')
-                      }
                     >
-                      <td className="px-4 py-3.5 text-white/30 text-sm">
+                      <td className="px-4 py-3.5 text-muted-foreground text-sm">
                         {(page - 1) * perPage + idx + 1}
                       </td>
                       <td className="px-4 py-3.5">
-                        <p className="text-white text-sm font-medium whitespace-nowrap">{a.studentName}</p>
-                        <p className="text-white/35 text-xs mt-0.5">{a.email}</p>
+                        <p className="text-foreground text-sm font-medium whitespace-nowrap">{a.studentName}</p>
+                        <p className="text-muted-foreground/60 text-xs mt-0.5">{a.email}</p>
                       </td>
                       <td className="px-4 py-3.5">
-                        <span className="text-white/60 text-xs font-mono">
+                        <span className="text-muted-foreground text-xs font-mono">
                           {a.hallTicketNumber || a.rollNumber}
                         </span>
                       </td>
                       <td className="px-4 py-3.5">
-                        <span className="text-white/60 text-sm whitespace-nowrap">{a.year}</span>
+                        <span className="text-muted-foreground text-sm whitespace-nowrap">{a.year}</span>
                       </td>
                       <td className="px-4 py-3.5">
-                        {sc ? (
-                          <span
-                            className="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap"
-                            style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}` }}
-                          >
-                            {a.stream}
-                          </span>
-                        ) : (
-                          <span className="text-white/50 text-sm">{a.stream}</span>
-                        )}
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-secondary text-muted-foreground border border-border">
+                          {a.stream}
+                        </span>
                       </td>
                       <td className="px-4 py-3.5">
-                        <p className="text-white/80 text-sm whitespace-nowrap">{a.awardName || a.title}</p>
+                        <p className="text-foreground/80 text-sm whitespace-nowrap">{a.awardName || a.title}</p>
                       </td>
                       <td className="px-4 py-3.5">
-                        <p className="text-white/60 text-sm truncate max-w-[120px]">
+                        <p className="text-muted-foreground text-sm truncate max-w-[120px]">
                           {a.eventName || a.description}
                         </p>
                       </td>
                       <td className="px-4 py-3.5">
-                        <span className="text-white/60 text-sm whitespace-nowrap">{a.achievementLevel}</span>
+                        <span className="text-muted-foreground text-sm whitespace-nowrap">{a.achievementLevel}</span>
                       </td>
                       <td className="px-4 py-3.5">
-                        <span className="text-white/50 text-xs capitalize">{a.teamType || '—'}</span>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <span className="text-white/50 text-sm whitespace-nowrap">
-                          {new Date(a.date + 'T00:00:00').toLocaleDateString('en-IN', {
+                        <span className="text-muted-foreground text-sm whitespace-nowrap">
+                          {a.date ? new Date(a.date + 'T00:00:00').toLocaleDateString('en-IN', {
                             day: 'numeric',
                             month: 'short',
                             year: '2-digit',
-                          })}
+                          }) : '—'}
                         </span>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span className="text-muted-foreground text-xs whitespace-nowrap">{a.academicYear}</span>
                       </td>
                       <td className="px-4 py-3.5">
                         {a.certificateLink ? (
@@ -509,23 +521,52 @@ export function AllAchievements() {
                             href={a.certificateLink}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-[#0ea5e9] hover:underline"
+                            className="text-foreground hover:underline"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <ExternalLink className="w-4 h-4" />
                           </a>
                         ) : (
-                          <span className="text-white/25">—</span>
+                          <span className="text-muted-foreground/30">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3.5">
                         <span
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium capitalize whitespace-nowrap"
-                          style={{ background: sta.bg, color: sta.color, border: `1px solid ${sta.border}` }}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium capitalize whitespace-nowrap ${sta.className}`}
                         >
                           <SIcon className="w-3 h-3" />
                           {a.status}
                         </span>
+                      </td>
+                      {/* Delete */}
+                      <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
+                        {deleteConfirm === a.id ? (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={async () => {
+                                await deleteAchievement(a.id);
+                                setDeleteConfirm(null);
+                                toast.success('Record deleted');
+                              }}
+                              className="px-2 py-1 rounded-lg text-xs bg-red-500 text-white hover:bg-red-600 transition-colors"
+                            >
+                              Yes
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirm(null)}
+                              className="px-2 py-1 rounded-lg text-xs bg-secondary text-muted-foreground border border-border hover:bg-accent transition-colors"
+                            >
+                              No
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setDeleteConfirm(a.id)}
+                            className="p-1.5 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );
@@ -537,11 +578,8 @@ export function AllAchievements() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div
-            className="px-6 py-4 flex items-center justify-between border-t gap-4 flex-wrap"
-            style={{ borderColor: 'rgba(255,255,255,0.07)' }}
-          >
-            <p className="text-white/40 text-sm">
+          <div className="px-6 py-4 flex items-center justify-between border-t border-border gap-4 flex-wrap">
+            <p className="text-muted-foreground text-sm">
               Showing {(page - 1) * perPage + 1}–{Math.min(page * perPage, filtered.length)} of{' '}
               {filtered.length}
             </p>
@@ -549,8 +587,8 @@ export function AllAchievements() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-3 py-1.5 rounded-lg text-sm bg-white/5 text-white/60 border border-white/10
-                  hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                className="px-3 py-1.5 rounded-lg text-sm bg-secondary text-muted-foreground border border-border
+                  hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed transition-all"
               >
                 Prev
               </button>
@@ -560,11 +598,10 @@ export function AllAchievements() {
                   <button
                     key={p}
                     onClick={() => setPage(p)}
-                    className={`w-8 h-8 rounded-lg text-sm transition-all ${
-                      page === p
-                        ? 'bg-[#0ea5e9] text-white'
-                        : 'bg-white/5 text-white/50 hover:bg-white/10 border border-white/10'
-                    }`}
+                    className={`w-8 h-8 rounded-lg text-sm transition-all ${page === p
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-secondary text-muted-foreground hover:bg-accent border border-border'
+                      }`}
                   >
                     {p}
                   </button>
@@ -573,8 +610,8 @@ export function AllAchievements() {
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="px-3 py-1.5 rounded-lg text-sm bg-white/5 text-white/60 border border-white/10
-                  hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                className="px-3 py-1.5 rounded-lg text-sm bg-secondary text-muted-foreground border border-border
+                  hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed transition-all"
               >
                 Next
               </button>

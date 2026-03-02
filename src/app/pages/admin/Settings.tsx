@@ -38,20 +38,14 @@ export function Settings() {
     description: string;
     children: React.ReactNode;
   }) => (
-    <div
-      className="rounded-2xl border border-white/8 overflow-hidden"
-      style={{ background: 'rgba(20, 28, 60, 0.70)', backdropFilter: 'blur(20px)' }}
-    >
-      <div
-        className="flex items-center gap-3 px-6 py-5 border-b"
-        style={{ borderColor: 'rgba(255,255,255,0.07)' }}
-      >
-        <div className="w-9 h-9 rounded-xl bg-[#0ea5e9]/15 flex items-center justify-center">
-          <Icon className="w-4 h-4 text-[#0ea5e9]" />
+    <div className="rounded-2xl border border-border overflow-hidden bg-card backdrop-blur-xl">
+      <div className="flex items-center gap-3 px-6 py-5 border-b border-border">
+        <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center">
+          <Icon className="w-4 h-4 text-muted-foreground" />
         </div>
         <div>
-          <h3 className="text-white">{title}</h3>
-          <p className="text-white/40 text-xs mt-0.5">{description}</p>
+          <h3 className="text-foreground">{title}</h3>
+          <p className="text-muted-foreground text-xs mt-0.5">{description}</p>
         </div>
       </div>
       <div className="px-6 py-5">{children}</div>
@@ -69,108 +63,83 @@ export function Settings() {
     checked: boolean;
     onChange: (v: boolean) => void;
   }) => (
-    <div className="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
+    <div className="flex items-center justify-between py-3 border-b border-border last:border-0">
       <div>
-        <p className="text-white/80 text-sm">{label}</p>
-        <p className="text-white/40 text-xs mt-0.5">{description}</p>
+        <p className="text-foreground/80 text-sm">{label}</p>
+        <p className="text-muted-foreground text-xs mt-0.5">{description}</p>
       </div>
       <button
         onClick={() => onChange(!checked)}
-        className={`relative w-11 h-6 rounded-full transition-all duration-200 flex-shrink-0 ${
-          checked ? 'bg-[#0ea5e9]' : 'bg-white/15'
-        }`}
+        className={`relative w-11 h-6 rounded-full transition-all duration-200 flex-shrink-0 ${checked ? 'bg-primary' : 'bg-switch-background'
+          }`}
       >
         <span
-          className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all duration-200 ${
-            checked ? 'left-6' : 'left-1'
-          }`}
+          className={`absolute top-1 w-4 h-4 rounded-full bg-primary-foreground shadow transition-all duration-200 ${checked ? 'left-6' : 'left-1'
+            }`}
         />
       </button>
     </div>
   );
 
+  const inputClass =
+    'w-full px-3 py-2 rounded-xl text-sm text-foreground bg-input-background border border-border focus:border-foreground focus:outline-none focus:ring-1 focus:ring-ring/30 transition-colors placeholder:text-muted-foreground/50';
+
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-white" style={{ fontSize: '1.75rem', fontWeight: 700 }}>
+        <h1 className="text-foreground" style={{ fontSize: '1.75rem', fontWeight: 700 }}>
           Settings
         </h1>
-        <p className="text-white/50 text-sm mt-1">Manage your admin portal preferences</p>
+        <p className="text-muted-foreground text-sm mt-1">Manage your admin portal preferences</p>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Profile Settings */}
+        {/* Profile */}
         <SectionCard icon={User} title="Profile" description="Update your admin account details">
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-white/60 text-xs">Display Name</label>
-              <input
-                type="text"
-                defaultValue="Admin User"
-                className="w-full px-3 py-2 rounded-xl text-sm text-white bg-white/5 border border-white/10
-                  focus:border-[#0ea5e9] focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]/30 transition-colors"
-              />
+              <label className="text-muted-foreground text-xs">Display Name</label>
+              <input type="text" defaultValue="Admin User" className={inputClass} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-white/60 text-xs">Email Address</label>
-              <input
-                type="email"
-                defaultValue="admin@college.edu"
-                className="w-full px-3 py-2 rounded-xl text-sm text-white bg-white/5 border border-white/10
-                  focus:border-[#0ea5e9] focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]/30 transition-colors"
-              />
+              <label className="text-muted-foreground text-xs">Email Address</label>
+              <input type="email" defaultValue="admin@college.edu" className={inputClass} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-white/60 text-xs">Employee ID</label>
-              <input
-                type="text"
-                defaultValue="CS-ADM-001"
-                className="w-full px-3 py-2 rounded-xl text-sm text-white bg-white/5 border border-white/10
-                  focus:border-[#0ea5e9] focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]/30 transition-colors"
-              />
+              <label className="text-muted-foreground text-xs">Employee ID</label>
+              <input type="text" defaultValue="CS-ADM-001" className={inputClass} />
             </div>
           </div>
         </SectionCard>
 
-        {/* Security Settings */}
+        {/* Security */}
         <SectionCard icon={Lock} title="Security" description="Manage your password and access">
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-white/60 text-xs">Current Password</label>
+              <label className="text-muted-foreground text-xs">Current Password</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Enter current password"
-                  className="w-full px-3 py-2 pr-10 rounded-xl text-sm text-white bg-white/5 border border-white/10
-                    focus:border-[#0ea5e9] focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]/30 transition-colors placeholder:text-white/25"
+                  className={`${inputClass} pr-10`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-white/60 text-xs">New Password</label>
-              <input
-                type="password"
-                placeholder="Enter new password"
-                className="w-full px-3 py-2 rounded-xl text-sm text-white bg-white/5 border border-white/10
-                  focus:border-[#0ea5e9] focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]/30 transition-colors placeholder:text-white/25"
-              />
+              <label className="text-muted-foreground text-xs">New Password</label>
+              <input type="password" placeholder="Enter new password" className={inputClass} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-white/60 text-xs">Confirm New Password</label>
-              <input
-                type="password"
-                placeholder="Confirm new password"
-                className="w-full px-3 py-2 rounded-xl text-sm text-white bg-white/5 border border-white/10
-                  focus:border-[#0ea5e9] focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]/30 transition-colors placeholder:text-white/25"
-              />
+              <label className="text-muted-foreground text-xs">Confirm New Password</label>
+              <input type="password" placeholder="Confirm new password" className={inputClass} />
             </div>
           </div>
         </SectionCard>
@@ -204,17 +173,17 @@ export function Settings() {
           <div className="space-y-3">
             {[
               { label: 'App Version', value: 'v1.0.0' },
-              { label: 'College Name', value: 'Engineering College' },
-              { label: 'Departments', value: 'AI & DS, Data Science, Cybersecurity' },
-              { label: 'Total Submissions', value: 'See Analytics' },
-              { label: 'Last Updated', value: 'February 23, 2026' },
+              { label: 'College Name', value: 'VNR Vignana Jyothi Institute of Engineering & Technology' },
+              { label: 'Departments', value: 'CSE-(DS), CSE-(CYS), AI&DS' },
+              { label: 'Backend', value: 'Supabase' },
+              { label: 'Last Updated', value: 'February 2026' },
             ].map(({ label, value }) => (
               <div
                 key={label}
-                className="flex items-center justify-between py-2.5 border-b border-white/5 last:border-0"
+                className="flex items-center justify-between py-2.5 border-b border-border last:border-0"
               >
-                <span className="text-white/50 text-sm">{label}</span>
-                <span className="text-white/80 text-sm">{value}</span>
+                <span className="text-muted-foreground text-sm">{label}</span>
+                <span className="text-foreground/80 text-sm">{value}</span>
               </div>
             ))}
           </div>
@@ -227,8 +196,8 @@ export function Settings() {
           onClick={handleSave}
           className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200
             ${saved
-              ? 'bg-[#10b981]/20 text-[#10b981] border border-[#10b981]/30'
-              : 'bg-gradient-to-r from-[#0ea5e9] to-[#0284c7] text-white hover:from-[#0284c7] hover:to-[#075985] shadow-lg shadow-[#0ea5e9]/20'
+              ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+              : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg'
             }`}
         >
           {saved ? (

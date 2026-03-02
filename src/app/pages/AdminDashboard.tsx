@@ -28,33 +28,38 @@ export function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterDepartment, setFilterDepartment] = useState('all');
   const [filterType, setFilterType] = useState('all');
+  const [filterAcademicYear, setFilterAcademicYear] = useState('all');
 
-  const handleApprove = (id: string) => {
-    updateAchievementStatus(id, 'approved');
+  const handleApprove = async (id: string) => {
+    await updateAchievementStatus(id, 'approved');
     toast.success('Achievement approved successfully!');
   };
 
-  const handleReject = (id: string) => {
-    updateAchievementStatus(id, 'rejected');
+  const handleReject = async (id: string) => {
+    await updateAchievementStatus(id, 'rejected');
     toast.error('Achievement rejected');
   };
 
-  const handleDelete = (id: string) => {
-    deleteAchievement(id);
+  const handleDelete = async (id: string) => {
+    await deleteAchievement(id);
     toast.success('Achievement deleted');
   };
 
+  // Get unique academic years for filter
+  const academicYears = [...new Set(achievements.map((a) => a.academicYear).filter(Boolean))].sort().reverse();
+
   // Filter achievements
   const filteredAchievements = achievements.filter(achievement => {
-    const matchesSearch = 
+    const matchesSearch =
       achievement.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       achievement.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (achievement.rollNumber || '').toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     const matchesDepartment = filterDepartment === 'all' || achievement.department === filterDepartment;
     const matchesType = filterType === 'all' || achievement.achievementType === filterType;
-    
-    return matchesSearch && matchesDepartment && matchesType;
+    const matchesAcademicYear = filterAcademicYear === 'all' || achievement.academicYear === filterAcademicYear;
+
+    return matchesSearch && matchesDepartment && matchesType && matchesAcademicYear;
   });
 
   const pendingAchievements = filteredAchievements.filter(a => a.status === 'pending');
@@ -68,46 +73,47 @@ export function AdminDashboard() {
   const uniqueStudents = new Set(achievements.map(a => a.rollNumber || a.hallTicketNumber)).size;
 
   const AchievementTable = ({ achievements, showActions = true }: { achievements: typeof filteredAchievements, showActions?: boolean }) => (
-    <div className="rounded-lg border border-white/10 bg-white/5 overflow-hidden">
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
       <Table>
         <TableHeader>
-          <TableRow className="border-white/10 hover:bg-white/5">
-            <TableHead className="text-white/80">Student</TableHead>
-            <TableHead className="text-white/80">Department</TableHead>
-            <TableHead className="text-white/80">Achievement</TableHead>
-            <TableHead className="text-white/80">Type</TableHead>
-            <TableHead className="text-white/80">Date</TableHead>
-            <TableHead className="text-white/80">Status</TableHead>
-            {showActions && <TableHead className="text-white/80 text-right">Actions</TableHead>}
+          <TableRow className="border-border hover:bg-accent">
+            <TableHead className="text-muted-foreground">Student</TableHead>
+            <TableHead className="text-muted-foreground">Department</TableHead>
+            <TableHead className="text-muted-foreground">Achievement</TableHead>
+            <TableHead className="text-muted-foreground">Type</TableHead>
+            <TableHead className="text-muted-foreground">Date</TableHead>
+            <TableHead className="text-muted-foreground">Year</TableHead>
+            <TableHead className="text-muted-foreground">Status</TableHead>
+            {showActions && <TableHead className="text-muted-foreground text-right">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
           {achievements.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={showActions ? 7 : 6} className="text-center text-white/50 py-8">
+              <TableCell colSpan={showActions ? 8 : 7} className="text-center text-muted-foreground py-8">
                 No achievements found
               </TableCell>
             </TableRow>
           ) : (
             achievements.map((achievement) => (
-              <TableRow key={achievement.id} className="border-white/10 hover:bg-white/5">
+              <TableRow key={achievement.id} className="border-border hover:bg-accent/50">
                 <TableCell>
                   <div>
-                    <div className="font-medium text-white">{achievement.studentName}</div>
-                    <div className="text-sm text-white/50">{achievement.rollNumber || achievement.hallTicketNumber}</div>
-                    <div className="text-xs text-white/40 flex items-center gap-1 mt-1">
+                    <div className="font-medium text-foreground">{achievement.studentName}</div>
+                    <div className="text-sm text-muted-foreground">{achievement.rollNumber || achievement.hallTicketNumber}</div>
+                    <div className="text-xs text-muted-foreground/60 flex items-center gap-1 mt-1">
                       <Mail className="w-3 h-3" />
                       {achievement.email}
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="text-white">{achievement.department || achievement.stream}</TableCell>
+                <TableCell className="text-foreground">{achievement.department || achievement.stream}</TableCell>
                 <TableCell>
                   <div className="max-w-xs">
-                    <div className="font-medium text-white line-clamp-1">{achievement.title || achievement.awardName}</div>
-                    <div className="text-sm text-white/60 line-clamp-2 mt-1">{achievement.description || achievement.eventName}</div>
+                    <div className="font-medium text-foreground line-clamp-1">{achievement.title || achievement.awardName}</div>
+                    <div className="text-sm text-muted-foreground line-clamp-2 mt-1">{achievement.description || achievement.eventName}</div>
                     {(achievement.certificateLink || achievement.proof) && (
-                      <div className="text-xs text-[#0ea5e9] mt-1 flex items-center gap-1">
+                      <div className="text-xs text-foreground/70 mt-1 flex items-center gap-1">
                         <FileText className="w-3 h-3" />
                         <a
                           href={achievement.certificateLink || achievement.proof}
@@ -122,25 +128,28 @@ export function AdminDashboard() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline" className="border-white/20 text-white/80">
+                  <Badge variant="outline" className="border-border text-muted-foreground">
                     {achievement.achievementType}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-white/80">
+                <TableCell className="text-muted-foreground">
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-white/50" />
+                    <Calendar className="w-4 h-4 text-muted-foreground/60" />
                     {new Date(achievement.date).toLocaleDateString()}
                   </div>
+                </TableCell>
+                <TableCell className="text-muted-foreground text-xs">
+                  {achievement.academicYear}
                 </TableCell>
                 <TableCell>
                   <Badge
                     variant={achievement.status === 'approved' ? 'default' : 'secondary'}
                     className={
                       achievement.status === 'approved'
-                        ? 'bg-[#10b981]/20 text-[#10b981] border-[#10b981]/30'
+                        ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
                         : achievement.status === 'pending'
-                        ? 'bg-[#f59e0b]/20 text-[#f59e0b] border-[#f59e0b]/30'
-                        : 'bg-[#ef4444]/20 text-[#ef4444] border-[#ef4444]/30'
+                          ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                          : 'bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30'
                     }
                   >
                     {achievement.status === 'approved' && <CheckCircle2 className="w-3 h-3 mr-1" />}
@@ -157,14 +166,14 @@ export function AdminDashboard() {
                           <Button
                             size="sm"
                             onClick={() => handleApprove(achievement.id)}
-                            className="bg-[#10b981]/20 text-[#10b981] hover:bg-[#10b981]/30 border border-[#10b981]/30"
+                            className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30"
                           >
                             <CheckCircle2 className="w-4 h-4" />
                           </Button>
                           <Button
                             size="sm"
                             onClick={() => handleReject(achievement.id)}
-                            className="bg-[#ef4444]/20 text-[#ef4444] hover:bg-[#ef4444]/30 border border-[#ef4444]/30"
+                            className="bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/30 border border-red-500/30"
                           >
                             <XCircle className="w-4 h-4" />
                           </Button>
@@ -174,7 +183,7 @@ export function AdminDashboard() {
                         size="sm"
                         variant="ghost"
                         onClick={() => handleDelete(achievement.id)}
-                        className="text-white/50 hover:text-[#ef4444] hover:bg-[#ef4444]/10"
+                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -194,74 +203,74 @@ export function AdminDashboard() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="font-['Plus_Jakarta_Sans'] text-4xl font-bold text-white mb-2">
+          <h1 className="font-['Plus_Jakarta_Sans'] text-4xl font-bold text-foreground mb-2">
             Admin Dashboard
           </h1>
-          <p className="text-white/60">Review and manage student achievement submissions</p>
+          <p className="text-muted-foreground">Review and manage student achievement submissions</p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="border-white/10 bg-[rgba(30,39,73,0.6)] backdrop-blur-xl shadow-2xl">
+          <Card className="border-border bg-card backdrop-blur-xl shadow-2xl">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-white/60 text-sm">Total Submissions</p>
-                  <p className="font-['Plus_Jakarta_Sans'] text-3xl font-bold text-white mt-1">{totalSubmissions}</p>
-                  <p className="text-[#0ea5e9] text-xs mt-2 flex items-center gap-1">
+                  <p className="text-muted-foreground text-sm">Total Submissions</p>
+                  <p className="font-['Plus_Jakarta_Sans'] text-3xl font-bold text-foreground mt-1">{totalSubmissions}</p>
+                  <p className="text-muted-foreground text-xs mt-2 flex items-center gap-1">
                     <TrendingUp className="w-3 h-3" />
                     All time
                   </p>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0ea5e9] to-[#0284c7] flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-primary-foreground" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-white/10 bg-[rgba(30,39,73,0.6)] backdrop-blur-xl shadow-2xl">
+          <Card className="border-border bg-card backdrop-blur-xl shadow-2xl">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-white/60 text-sm">Approved</p>
-                  <p className="font-['Plus_Jakarta_Sans'] text-3xl font-bold text-[#10b981] mt-1">{totalApproved}</p>
-                  <p className="text-[#10b981] text-xs mt-2">
+                  <p className="text-muted-foreground text-sm">Approved</p>
+                  <p className="font-['Plus_Jakarta_Sans'] text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{totalApproved}</p>
+                  <p className="text-emerald-600 dark:text-emerald-400 text-xs mt-2">
                     {totalSubmissions > 0 ? Math.round((totalApproved / totalSubmissions) * 100) : 0}% success rate
                   </p>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#10b981] to-[#059669] flex items-center justify-center">
-                  <CheckCircle2 className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                  <CheckCircle2 className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-white/10 bg-[rgba(30,39,73,0.6)] backdrop-blur-xl shadow-2xl">
+          <Card className="border-border bg-card backdrop-blur-xl shadow-2xl">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-white/60 text-sm">Pending Review</p>
-                  <p className="font-['Plus_Jakarta_Sans'] text-3xl font-bold text-[#f59e0b] mt-1">{totalPending}</p>
-                  <p className="text-[#f59e0b] text-xs mt-2">Requires action</p>
+                  <p className="text-muted-foreground text-sm">Pending Review</p>
+                  <p className="font-['Plus_Jakarta_Sans'] text-3xl font-bold text-amber-600 dark:text-amber-400 mt-1">{totalPending}</p>
+                  <p className="text-amber-600 dark:text-amber-400 text-xs mt-2">Requires action</p>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#f59e0b] to-[#d97706] flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                  <Clock className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-white/10 bg-[rgba(30,39,73,0.6)] backdrop-blur-xl shadow-2xl">
+          <Card className="border-border bg-card backdrop-blur-xl shadow-2xl">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-white/60 text-sm">Active Students</p>
-                  <p className="font-['Plus_Jakarta_Sans'] text-3xl font-bold text-white mt-1">{uniqueStudents}</p>
-                  <p className="text-[#0ea5e9] text-xs mt-2">Unique contributors</p>
+                  <p className="text-muted-foreground text-sm">Active Students</p>
+                  <p className="font-['Plus_Jakarta_Sans'] text-3xl font-bold text-foreground mt-1">{uniqueStudents}</p>
+                  <p className="text-muted-foreground text-xs mt-2">Unique contributors</p>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#38bdf8] to-[#0ea5e9] flex items-center justify-center">
-                  <Users className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Users className="w-6 h-6 text-foreground" />
                 </div>
               </div>
             </CardContent>
@@ -269,40 +278,40 @@ export function AdminDashboard() {
         </div>
 
         {/* Filters */}
-        <Card className="border-white/10 bg-[rgba(30,39,73,0.6)] backdrop-blur-xl shadow-2xl mb-6">
+        <Card className="border-border bg-card backdrop-blur-xl shadow-2xl mb-6">
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Filter className="w-5 h-5 text-[#0ea5e9]" />
+            <CardTitle className="text-foreground flex items-center gap-2">
+              <Filter className="w-5 h-5 text-muted-foreground" />
               Filters & Search
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid sm:grid-cols-3 gap-4">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="Search by name, title, or roll number..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-[#0ea5e9] focus:ring-[#0ea5e9]"
+                  className="pl-10 bg-input-background border-border text-foreground placeholder:text-muted-foreground/50 focus:border-foreground focus:ring-foreground"
                 />
               </div>
               <Select value={filterDepartment} onValueChange={setFilterDepartment}>
-                <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                <SelectTrigger className="bg-input-background border-border text-foreground">
                   <SelectValue placeholder="All Departments" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1e2749] border-white/10">
+                <SelectContent className="bg-popover border-border">
                   <SelectItem value="all">All Departments</SelectItem>
-                  <SelectItem value="AI & DS">AI &amp; DS</SelectItem>
+                  <SelectItem value="AI&DS">AI&amp;DS</SelectItem>
                   <SelectItem value="Data Science">Data Science</SelectItem>
                   <SelectItem value="Cybersecurity">Cybersecurity</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                <SelectTrigger className="bg-input-background border-border text-foreground">
                   <SelectValue placeholder="All Levels" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1e2749] border-white/10">
+                <SelectContent className="bg-popover border-border">
                   <SelectItem value="all">All Levels</SelectItem>
                   <SelectItem value="Inter-University">Inter-University</SelectItem>
                   <SelectItem value="State">State</SelectItem>
@@ -310,34 +319,45 @@ export function AdminDashboard() {
                   <SelectItem value="International">International</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={filterAcademicYear} onValueChange={setFilterAcademicYear}>
+                <SelectTrigger className="bg-input-background border-border text-foreground">
+                  <SelectValue placeholder="All Academic Years" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-border">
+                  <SelectItem value="all">All Academic Years</SelectItem>
+                  {academicYears.map((year) => (
+                    <SelectItem key={year} value={year}>{year}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
 
         {/* Achievements Table */}
-        <Card className="border-white/10 bg-[rgba(30,39,73,0.6)] backdrop-blur-xl shadow-2xl">
+        <Card className="border-border bg-card backdrop-blur-xl shadow-2xl">
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Award className="w-5 h-5 text-[#0ea5e9]" />
+            <CardTitle className="text-foreground flex items-center gap-2">
+              <Award className="w-5 h-5 text-muted-foreground" />
               Achievement Submissions
             </CardTitle>
-            <CardDescription className="text-white/60">
+            <CardDescription className="text-muted-foreground">
               Review and manage all student submissions
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="pending" className="space-y-4">
-              <TabsList className="bg-white/5 border border-white/10">
-                <TabsTrigger value="pending" className="data-[state=active]:bg-[#0ea5e9] data-[state=active]:text-white">
+              <TabsList className="bg-secondary border border-border">
+                <TabsTrigger value="pending" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                   Pending ({pendingAchievements.length})
                 </TabsTrigger>
-                <TabsTrigger value="approved" className="data-[state=active]:bg-[#0ea5e9] data-[state=active]:text-white">
+                <TabsTrigger value="approved" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                   Approved ({approvedAchievements.length})
                 </TabsTrigger>
-                <TabsTrigger value="rejected" className="data-[state=active]:bg-[#0ea5e9] data-[state=active]:text-white">
+                <TabsTrigger value="rejected" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                   Rejected ({rejectedAchievements.length})
                 </TabsTrigger>
-                <TabsTrigger value="all" className="data-[state=active]:bg-[#0ea5e9] data-[state=active]:text-white">
+                <TabsTrigger value="all" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                   All ({filteredAchievements.length})
                 </TabsTrigger>
               </TabsList>

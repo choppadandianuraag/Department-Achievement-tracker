@@ -34,11 +34,11 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: '/admin/login',
+    path: '/adminaccess/login',
     element: wrap(<AdminLogin />),
   },
   {
-    path: '/admin',
+    path: '/adminaccess',
     element: <AdminLayout />,
     children: [
       { index: true, element: wrap(<Dashboard />) },
@@ -53,11 +53,11 @@ export const router = createBrowserRouter([
     element: (
       <Layout>
         <div className="container mx-auto px-4 py-16 text-center">
-          <h1 className="text-white mb-4" style={{ fontSize: '2.5rem', fontWeight: 700 }}>
+          <h1 className="text-foreground mb-4" style={{ fontSize: '2.5rem', fontWeight: 700 }}>
             404 — Page Not Found
           </h1>
-          <p className="text-white/60 mb-8">The page you're looking for doesn't exist.</p>
-          <a href="/" className="text-[#0ea5e9] hover:underline">
+          <p className="text-muted-foreground mb-8">The page you're looking for doesn't exist.</p>
+          <a href="/" className="text-foreground hover:underline">
             Go back home
           </a>
         </div>

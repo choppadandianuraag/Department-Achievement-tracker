@@ -13,8 +13,8 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   const login = (email: string, password: string): boolean => {
     if (
-      (email === 'admin@college.edu' || email === 'admin') &&
-      password === 'admin123'
+      (email === 'admin@vnrvjiet.edu' || email === 'admin') &&
+      password === 'vnrvjiet@123'
     ) {
       setIsLoggedIn(true);
       return true;
