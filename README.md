@@ -21,9 +21,6 @@ A modern web platform for students to submit their academic achievements and for
 ### ⏳ Pending Approvals
 ![Pending Approvals](docs/screenshots/pending_approvals.png)
 
-### 🏆 All Achievements
-![All Achievements](docs/screenshots/all_achievements.png)
-
 ### 📈 Analytics
 ![Analytics](docs/screenshots/analytics.png)
 
