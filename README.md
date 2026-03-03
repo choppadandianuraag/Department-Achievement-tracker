@@ -9,24 +9,6 @@ A modern web platform for students to submit their academic achievements and for
 ### 🏠 Home Page
 ![Home Page](docs/screenshots/home.png)
 
-### 🎓 Student Portal
-![Student Portal](docs/screenshots/student_portal.png)
-
-### 🔐 Admin Login
-![Admin Login](docs/screenshots/admin_login.png)
-
-### 📊 Admin Dashboard
-![Admin Dashboard](docs/screenshots/admin_dashboard.png)
-
-### ⏳ Pending Approvals
-![Pending Approvals](docs/screenshots/pending_approvals.png)
-
-### 📈 Analytics
-![Analytics](docs/screenshots/analytics.png)
-
-### ⚙️ Settings
-![Settings](docs/screenshots/settings.png)
-
 ---
 
 ## ✨ Features
